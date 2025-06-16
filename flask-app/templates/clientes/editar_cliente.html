@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Cliente - Andamios Colosio{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        <script>
+          setTimeout(function() {
+            document.querySelectorAll('#notificaciones .alert').forEach(function(alert) {
+              alert.classList.remove('show');
+              alert.classList.add('hide');
+            });
+          }, 3000);
+          setTimeout(function() {
+            var notificaciones = document.getElementById('notificaciones');
+            if (notificaciones) notificaciones.remove();
+          }, 3500);
+        </script>
+      {% endif %}
+    {% endwith %}
+    <a href="{{ url_for('clientes.clientes') }}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Regresar
+    </a>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="mb-4" style="color:#23395d;"><i class="bi bi-pencil"></i> Editar Cliente</h3>
+
+                    <form method="POST" enctype="multipart/form-data" id="formEditarCliente">
+                        <div class="row">
+                            <!-- Columna 1: Datos personales -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Nombres *</label>
+                                    <input type="text" class="form-control" name="nombre" value="{{ cliente.nombre }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Primer Apellido *</label>
+                                    <input type="text" class="form-control" name="apellido1" value="{{ cliente.apellido1 }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Segundo Apellido *</label>
+                                    <input type="text" class="form-control" name="apellido2" value="{{ cliente.apellido2 }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Teléfono *</label>
+                                    <input type="text" class="form-control" name="telefono" value="{{ cliente.telefono }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Correo electrónico</label>
+                                    <input type="email" class="form-control" name="correo" value="{{ cliente.correo }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">RFC</label>
+                                    <input type="text" class="form-control" name="rfc" value="{{ cliente.rfc }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Estatus *</label>
+                                    <select class="form-select" name="tipo_cliente" required>
+                                        <option value="frecuente" {% if cliente.tipo_cliente=='frecuente' %}selected{% endif %}>Frecuente</option>
+                                        <option value="ocasional" {% if cliente.tipo_cliente=='ocasional' %}selected{% endif %}>Ocasional</option>
+                                        <option value="betado" {% if cliente.tipo_cliente=='betado' %}selected{% endif %}>Betado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Columna 2: Documentos -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Documentos actuales</label>
+                                    <div class="list-group mb-2">
+                                        {% for doc in documentos %}
+                                        <div class="list-group-item d-flex align-items-center justify-content-between">
+                                            <div style="max-width: 220px; overflow: hidden;">
+                                                <a href="{{ url_for('static', filename='uploads/clientes/' ~ doc.archivo) }}" target="_blank" style="text-decoration:none;">
+                                                    <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                    <span class="fw-bold text-truncate" style="max-width: 160px; display: inline-block; vertical-align: middle;" title="{{ doc.archivo }}">
+                                                        {{ doc.tipo_documento|capitalize }} - {{ doc.archivo }}
+                                                    </span>
+                                                </a>
+                                            </div>
+                                            <div>
+                                                <label class="form-check-label me-2">Eliminar</label>
+                                                <input type="checkbox" name="eliminar_doc" value="{{ doc.id }}">
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-muted">No hay documentos cargados.</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Agregar nuevos documentos</label>
+                                    <input class="form-control mb-2" type="file" id="documentos" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG. Puedes seleccionar varios archivos.</small>
+                                    <div id="previewDocs" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="submit" class="btn btn-danger btn-lg px-5 fw-bold">
+                                <i class="bi bi-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block scripts %}
+<script>
+let archivosSeleccionados = [];
+
+document.getElementById('documentos').addEventListener('change', function (e) {
+    for (let file of e.target.files) {
+        archivosSeleccionados.push({ file, tipo: 'otro' });
+    }
+    e.target.value = '';
+    renderPreview();
+});
+
+function renderPreview() {
+    const preview = document.getElementById('previewDocs');
+    preview.innerHTML = '';
+    if (archivosSeleccionados.length === 0) {
+        preview.innerHTML = '<small class="text-muted">No hay archivos seleccionados.</small>';
+        return;
+    }
+    archivosSeleccionados.forEach((item, idx) => {
+        let icon = '';
+        if (item.file.type === 'application/pdf') {
+            icon = '<i class="bi bi-file-earmark-pdf text-danger" style="font-size:2rem;"></i>';
+        } else if (item.file.type.startsWith('image/')) {
+            icon = '<i class="bi bi-file-earmark-image text-primary" style="font-size:2rem;"></i>';
+        } else {
+            icon = '<i class="bi bi-file-earmark" style="font-size:2rem;"></i>';
+        }
+        const size = (item.file.size / 1024 / 1024).toFixed(2) + ' MB';
+        const url = URL.createObjectURL(item.file);
+        preview.innerHTML += `
+            <div class="d-flex align-items-center border rounded p-2 mb-2" style="background:#f8fafc;">
+                ${icon}
+                <div class="ms-3 flex-grow-1">
+                    <div class="fw-bold">${item.file.name}</div>
+                    <div class="text-muted" style="font-size:0.9em;">${size}</div>
+                    <select class="form-select form-select-sm mt-1" style="width:auto;display:inline-block"
+                        onchange="cambiarTipoDoc(${idx}, this.value)">
+                        <option value="ine" ${item.tipo === 'ine' ? 'selected' : ''}>INE</option>
+                        <option value="comprobante" ${item.tipo === 'comprobante' ? 'selected' : ''}>Comprobante</option>
+                        <option value="licencia" ${item.tipo === 'licencia' ? 'selected' : ''}>Licencia</option>
+                        <option value="otro" ${item.tipo === 'otro' ? 'selected' : ''}>Otro</option>
+                    </select>
+                </div>
+                <a href="${url}" target="_blank" class="btn btn-outline-secondary btn-sm me-2" title="Vista previa">
+                    <i class="bi bi-eye"></i>
+                </a>
+                <button type="button" class="btn btn-danger btn-sm" onclick="eliminarArchivo(${idx})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    });
+}
+
+function cambiarTipoDoc(idx, tipo) {
+    archivosSeleccionados[idx].tipo = tipo;
+}
+
+function eliminarArchivo(idx) {
+    archivosSeleccionados.splice(idx, 1);
+    renderPreview();
+}
+
+document.getElementById('formEditarCliente').addEventListener('submit', function (e) {
+    // Si no hay archivos nuevos, deja que el form se envíe normalmente
+    if (archivosSeleccionados.length === 0) return;
+
+    const form = e.target;
+    const formData = new FormData(form);
+    archivosSeleccionados.forEach((item, idx) => {
+        formData.append('documentos', item.file);
+        formData.append(`tipo_documento_${idx}`, item.tipo);
+    });
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            response.text().then(html => {
+                document.body.innerHTML = html;
+            });
+        }
+    });
+    e.preventDefault();
+});
+</script>
+{% endblock %}

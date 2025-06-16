@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Clientes - Andamios Colosio{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        <script>
+          setTimeout(function() {
+            document.querySelectorAll('#notificaciones .alert').forEach(function(alert) {
+              alert.classList.remove('show');
+              alert.classList.add('hide');
+            });
+          }, 3000);
+          setTimeout(function() {
+            var notificaciones = document.getElementById('notificaciones');
+            if (notificaciones) notificaciones.remove();
+          }, 3500);
+        </script>
+      {% endif %}
+    {% endwith %}
+
+    <div class="clientes-box-container">
+        <div class="clientes-section-header">
+            <h2 class="clientes-section-title"><i class="bi bi-people"></i> Clientes</h2>
+            <a href="{{ url_for('clientes.nuevo_cliente') }}" class="btn btn-clientes-main">
+                <i class="bi bi-person-plus"></i> Nuevo Cliente
+            </a>
+        </div>
+        <form method="get" class="d-flex flex-wrap align-items-center mb-3 gap-2">
+            <input type="text" class="search-clientes-box" name="busqueda" placeholder="Buscar cliente..." value="{{ request.args.get('busqueda', '') }}">
+            <select class="form-select" name="filtro" style="max-width:180px;">
+                <option value="">Todos</option>
+                <option value="frecuente" {% if filtro=='frecuente' %}selected{% endif %}>Frecuente</option>
+                <option value="ocasional" {% if filtro=='ocasional' %}selected{% endif %}>Ocasional</option>
+                <option value="betado" {% if filtro=='betado' %}selected{% endif %}>Betado</option>
+            </select>
+            <button type="submit" class="btn btn-clientes-filter"><i class="bi bi-search"></i> Buscar</button>
+            <a href="{{ url_for('clientes.clientes', ver_bajas=ver_bajas|default(0)|int == 0 and 1 or 0) }}" class="btn btn-clientes-filter {{ 'active' if ver_bajas == '1' else '' }}">
+                {{ 'Ver Bajas' if ver_bajas != '1' else 'Ver Activos' }}
+            </a>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-clientes align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellidos</th>
+                        <th>Teléfono</th>
+                        <th>Fecha Alta</th>
+                        <th>Estatus</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if clientes %}
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.id }}</td>
+                        <td>
+                            <a href="{{ url_for('clientes.detalle_cliente', id=cliente.id) }}" class="fw-bold">
+                                {{ cliente.nombre }}
+                            </a>
+                        </td>
+                        <td>{{ cliente.apellido1 }} {{ cliente.apellido2 }}</td>
+                        <td>{{ cliente.telefono }}</td>
+                        <td>{{ cliente.fecha_alta.strftime('%d/%m/%Y') if cliente.fecha_alta else '' }}</td>
+                        <td>
+                            {% if ver_bajas == '1' %}
+                                <span class="badge badge-clientes bg-secondary">Dado de baja</span>
+                            {% else %}
+                                {% if cliente.tipo_cliente == 'frecuente' %}
+                                    <span class="badge badge-clientes bg-success">Frecuente</span>
+                                {% elif cliente.tipo_cliente == 'ocasional' %}
+                                    <span class="badge badge-clientes bg-warning text-dark">Ocasional</span>
+                                {% elif cliente.tipo_cliente == 'betado' %}
+                                    <span class="badge badge-clientes bg-danger">Betado</span>
+                                {% else %}
+                                    <span class="badge badge-clientes bg-secondary">Desconocido</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ver_bajas == '1' %}
+                                <a href="{{ url_for('clientes.reactivar_cliente', id=cliente.id) }}" class="btn btn-sm btn-outline-primary action-btn-clientes" title="Dar de alta nuevamente" onclick="return confirm('¿Seguro que deseas reactivar este cliente?');">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </a>
+                                <a href="{{ url_for('clientes.eliminar_cliente', id=cliente.id) }}" class="btn btn-sm btn-outline-danger action-btn-clientes" title="Eliminar definitivamente" onclick="return confirm('¿Seguro que deseas eliminar definitivamente este cliente? Esta acción no se puede deshacer.');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('clientes.editar_cliente', id=cliente.id) }}" class="btn btn-sm btn-outline-success action-btn-clientes" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('clientes.baja_cliente', id=cliente.id) }}" class="btn btn-sm btn-outline-danger action-btn-clientes" title="Dar de baja" onclick="return confirm('¿Seguro que deseas dar de baja este cliente?');">
+                                    <i class="bi bi-person-x"></i>
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No hay clientes registrados.</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

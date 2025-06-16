@@ -1,0 +1,104 @@
+/* Contenedor principal */
+.box-container {
+    background: #f8fafc;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px 0 rgba(51,99,175,0.08);
+    border: 2px solid #d1d5db;
+    padding: 2rem 2rem 1.5rem 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Header de sección */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+}
+
+.section-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #23395d;
+    margin-bottom: 0;
+}
+
+.btn-main {
+    background: #e74c3c;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 18px;
+    padding: 0.5rem 1.5rem;
+    font-size: 1.1rem;
+    border: none;
+    transition: background 0.2s;
+}
+.btn-main:hover {
+    background: #c0392b;
+    color: #fff;
+}
+
+.btn-tab {
+    background: #3363af;
+    color: #fff;
+    font-weight: bold;
+    border: none;
+    border-radius: 18px;
+    margin-right: 8px;
+    padding: 0.4rem 1.2rem;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-tab.active,
+.btn-tab:focus {
+    background: #23395d;
+    color: #fff;
+}
+.btn-tab:hover {
+    background: #274472;
+    color: #fff;
+}
+
+.search-box {
+    border-radius: 18px;
+    
+    border: 2px solid #d1d5db;
+    padding: 0.5rem 1.2rem;
+    font-size: 1.1rem;
+    width: 100%;
+    max-width: 350px;
+    margin-bottom: 1.2rem;
+    background: #f4f6fa;
+}
+
+.table-inventario th {
+    background: #3363af;
+    color: #fff;
+    border: none;
+    font-weight: bold;
+    text-align: center;
+}
+.table-inventario td {
+    background: #f8fafc;
+    color: #23395d;
+    border: none;
+    text-align: center;
+    vertical-align: middle;
+}
+.table-inventario tr:nth-child(even) td {
+    background: #e9ecf3;
+}
+.table-inventario tr:hover td {
+    background: #d1d5db;
+}
+
+.action-btn {
+    margin-right: 4px;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+@media (max-width: 900px) {
+    .box-container { padding: 1rem; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .search-box { max-width: 100%; }
+}

@@ -1,0 +1,73 @@
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    position: relative;
+}
+
+.login-bg {
+    background: url('../img/fondo.jpg') center center/cover no-repeat;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 0;
+}
+
+.login-card {
+    position: relative;
+    z-index: 1;
+    background-color: rgba(217, 217, 217, 0.93);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(39,68,114,0.18);
+    padding: 2.5rem 2rem 2rem 2rem;
+    max-width: 400px;
+    width: 100%;
+    margin: 60px auto;
+    top: 40px;
+}
+
+.login-logo {
+    display: block;
+    margin: 0 auto 1.5rem auto;
+    width: 300px;
+}
+
+.btn-login {
+    background-color: #c82333 !important;
+    border: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+    border-radius: 30px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+    color: #fff !important;
+}
+
+.btn-login:hover {
+    background-color: #a71d2a;
+}
+
+
+.recover-link {
+    color: #c82333;
+    font-size: 0.98rem;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.recover-link:hover {
+    color: #a71d2a;
+}
+
+.eye-toggle {
+    cursor: pointer;
+    background: #f0f0f0;
+    color: #274472;
+}
+
+.alert {
+    font-size: 0.98rem;
+    padding: 0.5rem 1rem;
+    margin-top: 0.5rem;
+}

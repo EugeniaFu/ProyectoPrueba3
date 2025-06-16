@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario General{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="box-container">
+  <div class="section-header">
+    <div>
+      <span class="section-title">Inventario General</span>
+    </div>
+    <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#modalNuevaPieza">
+      <i class="bi bi-plus-lg"></i> Nueva Pieza
+    </button>
+  </div>
+  <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
+    <input type="text" id="buscadorPiezas" class="search-box" placeholder="Buscar pieza...">
+    <div class="btn-group" role="group">
+      <a href="{{ url_for('inventario.inventario_general') }}" class="btn btn-tab active">Inventario</a>
+      <a href="{{ url_for('producto.productos') }}" class="btn btn-tab">Productos</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-inventario align-middle">
+      <thead>
+        <tr>
+          <th>Pieza</th>
+          <th>Categoría</th>
+          <th>Total Empresa</th>
+          {% for sucursal in sucursales %}
+          <th>{{ sucursal.nombre }}</th>
+          {% endfor %}
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pieza in piezas %}
+        <tr>
+          <td>{{ pieza.nombre_pieza }}</td>
+          <td>{{ pieza.categoria or '-' }}</td>
+          <td>{{ pieza.total_empresa }}</td>
+          {% for sucursal in sucursales %}
+          <td>
+            <div>Tot: {{ pieza.sucursales[sucursal.id].total }}</div>
+            <div>Disp: {{ pieza.sucursales[sucursal.id].disponibles }}</div>
+            <div>Rent: {{ pieza.sucursales[sucursal.id].rentadas }}</div>
+            <div>Dañ: {{ pieza.sucursales[sucursal.id].daniadas }}</div>
+            <div>Repar: {{ pieza.sucursales[sucursal.id].en_reparacion }}</div>
+          </td>
+          {% endfor %}
+          <td>
+            <button class="btn btn-primary btn-sm action-btn" data-bs-toggle="modal"
+              data-bs-target="#modalAltaBaja{{ pieza.id_pieza }}">Alta/Baja</button>
+            <button class="btn btn-info btn-sm action-btn" data-bs-toggle="modal"
+              data-bs-target="#modalTransferir{{ pieza.id_pieza }}">Transferir</button>
+          </td>
+        </tr>
+
+        <!-- Modal Alta/Baja -->
+        <div class="modal fade" id="modalAltaBaja{{ pieza.id_pieza }}" tabindex="-1"
+          aria-labelledby="modalAltaBajaLabel{{ pieza.id_pieza }}" aria-hidden="true">
+          <div class="modal-dialog">
+            <form method="POST" action="{{ url_for('inventario.alta_baja_pieza') }}">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalAltaBajaLabel{{ pieza.id_pieza }}">Alta/Baja de {{ pieza.nombre_pieza
+                    }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="id_pieza" value="{{ pieza.id_pieza }}">
+                  <div class="mb-2">
+                    <label class="form-label">Sucursal</label>
+                    <select class="form-select" name="id_sucursal" required>
+                      {% for sucursal in sucursales %}
+                      <option value="{{ sucursal.id }}">{{ sucursal.nombre }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" name="cantidad" min="1" required>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Tipo de movimiento</label>
+                    <select class="form-select tipo-movimiento" name="tipo" required
+                      onchange="mostrarDescripcion(this, '{{ pieza.id_pieza }}')">
+                      <option value="alta">Alta (sumar)</option>
+                      <option value="baja">Baja (restar)</option>
+                    </select>
+                  </div>
+                  <div class="mb-2 d-none" id="descripcionBaja{{ pieza.id_pieza }}">
+                    <label class="form-label">Descripción de la baja</label>
+                    <textarea class="form-control" name="descripcion" rows="2"></textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Modal Transferir -->
+        <div class="modal fade" id="modalTransferir{{ pieza.id_pieza }}" tabindex="-1"
+          aria-labelledby="modalTransferirLabel{{ pieza.id_pieza }}" aria-hidden="true">
+          <div class="modal-dialog">
+            <form method="POST" action="{{ url_for('inventario.transferir_pieza') }}">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalTransferirLabel{{ pieza.id_pieza }}">Transferir {{ pieza.nombre_pieza
+                    }}</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="id_pieza" value="{{ pieza.id_pieza }}">
+                  <div class="mb-2">
+                    <label class="form-label">De sucursal</label>
+                    <select class="form-select" name="id_sucursal_origen" required>
+                      {% for sucursal in sucursales %}
+                      <option value="{{ sucursal.id }}">{{ sucursal.nombre }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">A sucursal</label>
+                    <select class="form-select" name="id_sucursal_destino" required>
+                      {% for sucursal in sucursales %}
+                      <option value="{{ sucursal.id }}">{{ sucursal.nombre }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Cantidad</label>
+                    <input type="number" class="form-control" name="cantidad" min="1" required>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" class="btn btn-info">Transferir</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Nueva Pieza -->
+<div class="modal fade" id="modalNuevaPieza" tabindex="-1" aria-labelledby="modalNuevaPiezaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('inventario.agregar_pieza_general') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalNuevaPiezaLabel">Agregar Nueva Pieza</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Nombre de la pieza</label>
+            <input type="text" class="form-control" name="nombre_pieza" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Categoría</label>
+            <input type="text" class="form-control" name="categoria">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Agregar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function mostrarDescripcion(select, id) {
+    var descDiv = document.getElementById('descripcionBaja' + id);
+    if (select.value === 'baja') {
+      descDiv.classList.remove('d-none');
+    } else {
+      descDiv.classList.add('d-none');
+    }
+  }
+  document.getElementById('buscadorPiezas').addEventListener('keyup', function () {
+    var filtro = this.value.toLowerCase();
+    document.querySelectorAll('.table-inventario tbody tr').forEach(function (row) {
+      var texto = row.innerText.toLowerCase();
+      row.style.display = texto.includes(filtro) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

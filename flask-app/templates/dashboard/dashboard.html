@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Andamios Colosio{% endblock %}
+
+{% block content %}
+<div class="dashboard-welcome card shadow-sm mt-5 mb-4" style="background: #f8fafc; border-radius: 18px;">
+    <div class="card-body text-center">
+        <h1 class="display-5 mb-3" style="color: #23395d;">
+            ¡Bienvenido{{ 'a' if session['rol'] == 1 else '' }}, {{ session['nombre_usuario'] }}!
+        </h1>
+        <p class="lead" style="color: #274472;">
+            Este es tu panel principal. Desde aquí puedes acceder a todos los módulos del sistema Andamios Colosio.
+        </p>
+        <hr class="my-4" style="border-color: #274472;">
+        <div class="row justify-content-center">
+            <div class="col-md-4 mb-3">
+                <div class="info-box p-3" style="background: #23395d; color: #fff; border-radius: 12px;">
+                    <i class="bi bi-building display-6"></i>
+                    <div class="mt-2">Sucursal actual: 
+                        <strong>
+                        {% if session['sucursal_id'] == 1 %}
+                            La Matriz Colosio
+                        {% elif session['sucursal_id'] == 2 %}
+                            Sucursal Los Reyes
+                        {% elif session['sucursal_id'] == 3 %}
+                            Sucursal Lerma
+                        {% else %}
+                            Desconocida
+                        {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="info-box p-3" style="background: #274472; color: #fff; border-radius: 12px;">
+                    <i class="bi bi-person-badge display-6"></i>
+                    <div class="mt-2">Rol: 
+                        <strong>
+                        {% if session['rol'] == 1 %}
+                            Cliente
+                        {% elif session['rol'] == 2 %}
+                            Administrador
+                        {% elif session['rol'] == 3 %}
+                            Cargador
+                        {% elif session['rol'] == 4 %}
+                            Cliente
+                        {% else %}
+                            Desconocido
+                        {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

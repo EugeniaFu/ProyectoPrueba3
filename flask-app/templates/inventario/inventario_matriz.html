@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario - {{ sucursal.nombre }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventario.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="box-container">
+  <div class="section-header">
+    <div>
+      <span class="section-title">Inventario de {{ sucursal.nombre }}</span>
+    </div>
+    <!-- Puedes agregar aquí un botón de acción si lo necesitas -->
+  </div>
+  <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
+    <input type="text" id="buscadorMatriz" class="search-box" placeholder="Buscar pieza...">
+    <!-- Aquí podrías agregar botones a la derecha si lo deseas -->
+  </div>
+  <div class="table-responsive">
+    <table class="table table-inventario align-middle">
+      <thead>
+        <tr>
+          <th>Pieza</th>
+          <th>Categoría</th>
+          <th>Total</th>
+          <th>Disponibles</th>
+          <th>Rentadas</th>
+          <th>Dañadas</th>
+          <th>En Reparación</th>
+          <th>Stock Mínimo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pieza in piezas %}
+        <tr>
+          <td>{{ pieza.nombre_pieza }}</td>
+          <td>{{ pieza.categoria or '-' }}</td>
+          <td>{{ pieza.total }}</td>
+          <td>{{ pieza.disponibles }}</td>
+          <td>{{ pieza.rentadas }}</td>
+          <td>{{ pieza.daniadas }}</td>
+          <td>{{ pieza.en_reparacion }}</td>
+          <td>{{ pieza.stock_minimo }}</td>
+          <td>
+            <!-- Enviar a reparación -->
+            <form method="POST" action="{{ url_for('inventario.mandar_a_reparacion') }}" style="display:inline;">
+              <input type="hidden" name="id_pieza" value="{{ pieza.id_pieza }}">
+              <input type="hidden" name="id_sucursal" value="{{ sucursal.id }}">
+              <input type="number" name="cantidad" min="1" max="{{ pieza.daniadas }}" value="1" style="width:60px;" {%
+                if pieza.daniadas==0 %}disabled{% endif %}>
+              <button class="btn btn-warning btn-sm action-btn" {% if pieza.daniadas==0 %}disabled{% endif %}>Enviar a
+                reparación</button>
+            </form>
+            <!-- Regresar a disponibles -->
+            <form method="POST" action="{{ url_for('inventario.regresar_a_disponible') }}" style="display:inline;">
+              <input type="hidden" name="id_pieza" value="{{ pieza.id_pieza }}">
+              <input type="hidden" name="id_sucursal" value="{{ sucursal.id }}">
+              <input type="number" name="cantidad" min="1" max="{{ pieza.en_reparacion }}" value="1" style="width:60px;"
+                {% if pieza.en_reparacion==0 %}disabled{% endif %}>
+              <button class="btn btn-success btn-sm action-btn" {% if pieza.en_reparacion==0 %}disabled{% endif
+                %}>Regresar a disponibles</button>
+            </form>
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.getElementById('buscadorMatriz').addEventListener('keyup', function () {
+    var filtro = this.value.toLowerCase();
+    document.querySelectorAll('.table-inventario tbody tr').forEach(function (row) {
+      var texto = row.innerText.toLowerCase();
+      row.style.display = texto.includes(filtro) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

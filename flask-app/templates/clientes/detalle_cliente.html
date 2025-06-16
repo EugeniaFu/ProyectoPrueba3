@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle Cliente - Andamios Colosio{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
+<style>
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2"
+            role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('#notificaciones .alert').forEach(function (alert) {
+                alert.classList.remove('show');
+                alert.classList.add('hide');
+            });
+        }, 3000);
+        setTimeout(function () {
+            var notificaciones = document.getElementById('notificaciones');
+            if (notificaciones) notificaciones.remove();
+        }, 3500);
+    </script>
+    {% endif %}
+    {% endwith %}
+    <a href="{{ url_for('clientes.clientes') }}" class="btn btn-outline-secondary mb-3">
+        <i class="bi bi-arrow-left"></i> Regresar
+    </a>
+
+    <h2 class="mb-3 text-center">{{ cliente.nombre }} {{ cliente.apellido1 }} {{ cliente.apellido2 }}</h2>
+    <hr>
+    <div class="row">
+        <!-- Info y tabs -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="clienteTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info"
+                                type="button" role="tab">Información</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial"
+                                type="button" role="tab">Historial de pedidos</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <!-- Información -->
+                        <div class="tab-pane fade show active" id="info" role="tabpanel">
+                            <dl class="row">
+                                <dt class="col-sm-4">ID:</dt>
+                                <dd class="col-sm-8">{{ cliente.id }}</dd>
+                                <dt class="col-sm-4">Nombre:</dt>
+                                <dd class="col-sm-8">{{ cliente.nombre }} {{ cliente.apellido1 }} {{ cliente.apellido2
+                                    }}</dd>
+                                <dt class="col-sm-4">Teléfono:</dt>
+                                <dd class="col-sm-8">{{ cliente.telefono }}</dd>
+                                <dt class="col-sm-4">Correo:</dt>
+                                <dd class="col-sm-8">{{ cliente.correo or '-' }}</dd>
+                                <dt class="col-sm-4">RFC:</dt>
+                                <dd class="col-sm-8">{{ cliente.rfc or '-' }}</dd>
+                                <dt class="col-sm-4">Sucursal:</dt>
+                                <dd class="col-sm-8">{{ cliente.sucursal_nombre or '-' }}</dd>
+                                <dt class="col-sm-4">Estatus:</dt>
+                                <dd class="col-sm-8">
+                                    {% if cliente.tipo_cliente == 'frecuente' %}
+                                    <span class="badge bg-success">Frecuente</span>
+                                    {% elif cliente.tipo_cliente == 'ocasional' %}
+                                    <span class="badge bg-warning">Ocasional</span>
+                                    {% elif cliente.tipo_cliente == 'betado' %}
+                                    <span class="badge bg-danger">Betado</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Desconocido</span>
+                                    {% endif %}
+                                </dd>
+                                <dt class="col-sm-4">Fecha de alta:</dt>
+                                <dd class="col-sm-8">{{ cliente.fecha_alta.strftime('%d/%m/%Y') if cliente.fecha_alta
+                                    else '-' }}</dd>
+                            </dl>
+                            <div class="text-end">
+                                <a href="{{ url_for('clientes.editar_cliente', id=cliente.id) }}"
+                                    class="btn btn-danger fw-bold">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Historial de pedidos (placeholder) -->
+                        <div class="tab-pane fade" id="historial" role="tabpanel">
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-clock-history" style="font-size:2em;"></i>
+                                <div>Próximamente: aquí aparecerá el historial de rentas/pedidos.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Archivos/documentos -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header text-center fw-bold" style="color:#e53935; font-size:1.3em;">
+                    Archivos
+                </div>
+                <div class="card-body" style="max-height: 420px; overflow-y: auto;">
+                    {% for doc in documentos %}
+                    <div class="border rounded p-2 mb-3 d-flex align-items-center">
+                        <i class="bi bi-file-earmark-pdf text-danger" style="font-size:2em;"></i>
+                        <div class="ms-3 flex-grow-1">
+                            <div class="fw-bold text-truncate" style="max-width: 160px;" title="{{ doc.archivo }}">
+                                {{ doc.tipo_documento|capitalize }} - {{ doc.archivo }}
+                            </div>
+                            <div class="text-muted" style="font-size:0.9em;">
+                                {{ doc.fecha_subida.strftime('%d/%m/%Y') if doc.fecha_subida else '' }}
+                            </div>
+                        </div>
+                        <a href="{{ url_for('static', filename='uploads/clientes/' ~ doc.archivo) }}" target="_blank"
+                            class="btn btn-outline-secondary btn-sm ms-2" title="Ver archivo">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-muted text-center">No hay archivos cargados.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

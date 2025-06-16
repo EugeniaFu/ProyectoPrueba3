@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo Cliente - Andamios Colosio{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+        <script>
+          setTimeout(function() {
+            document.querySelectorAll('#notificaciones .alert').forEach(function(alert) {
+              alert.classList.remove('show');
+              alert.classList.add('hide');
+            });
+          }, 3000);
+          setTimeout(function() {
+            var notificaciones = document.getElementById('notificaciones');
+            if (notificaciones) notificaciones.remove();
+          }, 3500);
+        </script>
+      {% endif %}
+    {% endwith %}
+    <a href="{{ url_for('clientes.clientes') }}" class="nuevo-cliente-btn-regresar mb-3">
+        <i class="bi bi-arrow-left"></i> Regresar
+    </a>
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="nuevo-cliente-card">
+                <div class="card-body">
+                    <h3 class="nuevo-cliente-title"><i class="bi bi-person-plus"></i> Nuevo Cliente</h3>
+                    <form method="POST" enctype="multipart/form-data" id="formNuevoCliente">
+                        <div class="row">
+                            <!-- Información del cliente -->
+                            <div class="col-md-6">
+                                <div class="nuevo-cliente-section h-100">
+                                    <h5>Información</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombres *</label>
+                                        <input type="text" class="form-control" name="nombre" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Primer Apellido *</label>
+                                        <input type="text" class="form-control" name="apellido1" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Segundo Apellido *</label>
+                                        <input type="text" class="form-control" name="apellido2" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Teléfono *</label>
+                                        <input type="text" class="form-control" name="telefono" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Correo electrónico</label>
+                                        <input type="email" class="form-control" name="correo">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">RFC</label>
+                                        <input type="text" class="form-control" name="rfc">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Estatus *</label>
+                                        <select class="form-select" name="tipo_cliente" required>
+                                            <option value="">Selecciona...</option>
+                                            <option value="frecuente">Frecuente</option>
+                                            <option value="ocasional">Ocasional</option>
+                                            <option value="betado">Betado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Documentos del cliente -->
+                            <div class="col-md-6">
+                                <div class="nuevo-cliente-section h-100">
+                                    <h5>Archivos</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Subir Documentos (al menos uno) *</label>
+                                        <input class="form-control mb-2" type="file" id="documentos" name="documentos" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                        <small class="text-muted">Formatos permitidos: PDF, JPG, PNG.</small>
+                                        <div id="previewDocs" class="mt-3"></div>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        Sube al menos uno de los siguientes: INE, Licencia, Comprobante de domicilio.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="submit" class="nuevo-cliente-btn-guardar">
+                                <i class="bi bi-save"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/nuevo_cliente.js') }}"></script>
+{% endblock %}

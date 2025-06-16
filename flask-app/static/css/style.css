@@ -1,0 +1,89 @@
+body {
+    background: #a8abae;
+    font-family: 'Segoe UI', Arial, sans-serif;
+
+}
+.sidebar {
+    min-height: 100vh;
+    border-right: 1px solid #d1d5db;
+    background: #3363af;
+    color: #fff;
+}
+.sidebar .accordion-button {
+    background: #23395d;
+    color: #fff;
+    font-weight: bold;
+}
+.sidebar .accordion-button:not(.collapsed) {
+    background: #274472;
+    color: #fff;
+}
+.sidebar .accordion-item {
+    border: none;
+}
+.sidebar .accordion-body {
+    background: #2e4061;
+}
+.sidebar .nav-link {
+    color: #cfd8dc;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+.sidebar .nav-link.active,
+.sidebar .nav-link:focus {
+    color: #fff;
+    background: #274472;
+    font-weight: bold;
+}
+.sidebar .nav-link:hover {
+    background: #3a5068;
+    color: #fff;
+}
+.sidebar .nav-link.text-danger {
+    color: #ff6b6b !important;
+}
+.sidebar hr {
+    margin: 1rem 0;
+    border-color: #3a5068;
+}
+.sidebar strong, .sidebar .accordion-header {
+    color: #fff;
+}
+.dashboard-btn {
+    background: #23395d;
+    border: none;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.dashboard-btn:hover {
+    background: #274472;
+    color: #fff;
+}
+main {
+    padding-top: 20px;
+}
+
+/*////////////////////////////////////////////*/
+/* Filtros de clientes */
+.btn-filter {
+    background: #ffb366;
+    color: #4B2047;
+    font-weight: bold;
+    border: none;
+    margin-right: 5px;
+    border-radius: 20px;
+    transition: background 0.2s, color 0.2s;
+}
+.btn-filter.active,
+.btn-filter:hover {
+    background: #4B2047;
+    color: #fff;
+}
+.table thead th {
+    vertical-align: middle;
+}
