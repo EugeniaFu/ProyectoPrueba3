@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 
-
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Andamios Colosio{% endblock %}</title>
@@ -11,97 +10,150 @@
     {% block head %}{% endblock %}
 </head>
 
-
 <body>
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        <nav class="col-md-3 col-lg-2 d-md-block sidebar px-0">
-            <div class="position-sticky pt-3">
-                <!-- Logo y Dashboard -->
-                <div class="text-center mb-4">
-                    <a href="{{ url_for('dashboard.dashboard') }}" class="d-block mb-2">
-                        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Colosio" style="max-width: 225px;">
-                    </a>
-                </div>
-                <!-- Menú desplegable por sucursal -->
-                <div class="accordion" id="sucursalesAccordion">
-                    <!-- Matriz -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingMatriz">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseMatriz" aria-expanded="true" aria-controls="collapseMatriz">
-                                <i class="bi bi-building"></i> La Matriz Colosio
-                            </button>
-                        </h2>
-                        <div id="collapseMatriz" class="accordion-collapse collapse show" aria-labelledby="headingMatriz" data-bs-parent="#sucursalesAccordion">
-                            <div class="accordion-body p-0">
-                                <ul class="nav flex-column ms-3">
-                                    <li class="nav-item"><a class="nav-link" href="{{ url_for('inventario.inventario_matriz') }}"><i class="bi bi-box-seam"></i> Inventario</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="{{ url_for('clientes.clientes') }}"><i class="bi bi-people"></i> Clientes</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i> Productos</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i> Rentas</a></li>
-                                </ul>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar px-0">
+                <div class="position-sticky pt-3">
+                    <!-- Logo y Dashboard -->
+                    <div class="text-center mb-4">
+                        <a href="{{ url_for('dashboard.dashboard') }}" class="d-block mb-2">
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo Colosio"
+                                style="max-width: 225px;">
+                        </a>
+                    </div>
+                    <!-- Menú desplegable por sucursal -->
+                    <div class="accordion" id="sucursalesAccordion">
+                        <!-- Matriz -->
+                        {% if session['rol_id'] == 2 or session['sucursal_id'] == 1 %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingMatriz">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseMatriz" aria-expanded="true"
+                                    aria-controls="collapseMatriz">
+                                    <i class="bi bi-building"></i> La Matriz Colosio
+                                </button>
+                            </h2>
+                            <div id="collapseMatriz" class="accordion-collapse collapse show"
+                                aria-labelledby="headingMatriz" data-bs-parent="#sucursalesAccordion">
+                                <div class="accordion-body p-0">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item"><a class="nav-link"
+                                                href="{{ url_for('clientes.clientes') }}"><i class="bi bi-people"></i>
+                                                Clientes</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i>
+                                                Rentas</a></li>        
+                                        <li class="nav-item"><a class="nav-link"
+                                                href="{{ url_for('inventario.inventario_matriz') }}"><i
+                                                    class="bi bi-box-seam"></i> Inventario</a></li>
+                                        <li class="nav-item"><a class="nav-link"
+                                                href="{{ url_for('producto.productos') }}"><i class="bi bi-bag"></i>
+                                                Productos</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Los Reyes -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingReyes">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReyes" aria-expanded="false" aria-controls="collapseReyes">
-                                <i class="bi bi-building"></i> Sucursal Los Reyes
-                            </button>
-                        </h2>
-                        <div id="collapseReyes" class="accordion-collapse collapse" aria-labelledby="headingReyes" data-bs-parent="#sucursalesAccordion">
-                            <div class="accordion-body p-0">
-                                <ul class="nav flex-column ms-3">
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-box-seam"></i> Inventario</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-people"></i> Clientes</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i> Productos</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i> Rentas</a></li>
-                                </ul>
+                        {% endif %}
+                        <!-- Los Reyes -->
+                        {% if session['rol_id'] == 2 or session['sucursal_id'] == 2 %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingReyes">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseReyes" aria-expanded="false" aria-controls="collapseReyes">
+                                    <i class="bi bi-building"></i> Sucursal Los Reyes
+                                </button>
+                            </h2>
+                            <div id="collapseReyes" class="accordion-collapse collapse" aria-labelledby="headingReyes"
+                                data-bs-parent="#sucursalesAccordion">
+                                <div class="accordion-body p-0">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-box-seam"></i>
+                                                Inventario</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-people"></i>
+                                                Clientes</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i>
+                                                Productos</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i>
+                                                Rentas</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Lerma -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingLerma">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLerma" aria-expanded="false" aria-controls="collapseLerma">
-                                <i class="bi bi-building"></i> Sucursal Lerma
-                            </button>
-                        </h2>
-                        <div id="collapseLerma" class="accordion-collapse collapse" aria-labelledby="headingLerma" data-bs-parent="#sucursalesAccordion">
-                            <div class="accordion-body p-0">
-                                <ul class="nav flex-column ms-3">
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-box-seam"></i> Inventario</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-people"></i> Clientes</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i> Productos</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i> Rentas</a></li>
-                                </ul>
+                        {% endif %}
+                        <!-- Lerma -->
+                        {% if session['rol_id'] == 2 or session['sucursal_id'] == 3 %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingLerma">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseLerma" aria-expanded="false" aria-controls="collapseLerma">
+                                    <i class="bi bi-building"></i> Sucursal Lerma
+                                </button>
+                            </h2>
+                            <div id="collapseLerma" class="accordion-collapse collapse" aria-labelledby="headingLerma"
+                                data-bs-parent="#sucursalesAccordion">
+                                <div class="accordion-body p-0">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-box-seam"></i>
+                                                Inventario</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-people"></i>
+                                                Clientes</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bag"></i>
+                                                Productos</a></li>
+                                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-truck"></i>
+                                                Rentas</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
+                        {% endif %}
+                    </div>
+                    <!-- General (solo admin) -->
+
+                    <div class="mt-4">
+                        <hr>
+                        <strong><i class="bi bi-grid"></i> General</strong>
+                        <ul class="nav flex-column ms-3">
+                            {% if 'ver_inventario_general' in session['permisos'] %}
+                            <li class="nav-item"><a class="nav-link"
+                                    href="{{ url_for('inventario.inventario_general') }}"><i class="bi bi-boxes"></i>
+                                    Inventario General</a></li>
+                            {% endif %}
+                            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bar-chart"></i>
+                                    Reportes</a></li>
+                            {% if session['rol_id'] == 2 %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('empleados.empleados') }}"><i
+                                        class="bi bi-person-badge"></i> Empleados</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-diagram-3"></i>
+                                    Sucursales</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-gear"></i>
+                                    Configuración</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    <!-- Perfil y cerrar sesión (siempre visibles) -->
+                    <div class="mt-4">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('usuarios.perfil') }}"> <i
+                                        class="bi bi-person-circle"></i>
+                                    Mi Perfil</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('login.login') }}"><i
+                                        class="bi bi-box-arrow-right"></i>
+                                    Cerrar sesión</a></li>
+                        </ul>
                     </div>
                 </div>
-                <!-- General -->
-                <div class="mt-4">
-                    <hr>
-                    <strong><i class="bi bi-grid"></i> General</strong>
-                    <ul class="nav flex-column ms-3">
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('inventario.inventario_general') }}"><i class="bi bi-boxes"></i> Inventario General</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bar-chart"></i> Reportes</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-person-badge"></i> Empleados</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-diagram-3"></i> Sucursales</a></li>
-                        <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('login.login') }}"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a></li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-        <!-- Main content -->
-        <main class="col-md-9 col-lg-10 ms-auto px-4">
-            {% block content %}{% endblock %}
-        </main>
+            </nav>
+            <!-- Main content -->
+            <main class="col-md-9 col-lg-10 ms-auto px-4">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
     </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-{% block scripts %} {% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %} {% endblock %}
 </body>
-</html> 
+
+</html>

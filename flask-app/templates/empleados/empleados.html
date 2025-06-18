@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Empleados{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="clientes-box-container">
+    <div class="clientes-section-header">
+        <h2 class="clientes-section-title"><i class="bi bi-person-badge"></i> Gestión de Empleados</h2>
+        <a href="#" class="btn btn-clientes-main" data-bs-toggle="modal" data-bs-target="#modalNuevoEmpleado">
+            <i class="bi bi-plus-circle"></i> Nuevo empleado
+        </a>
+    </div>
+    <!-- Filtros y buscador -->
+    <form method="get" class="d-flex flex-wrap align-items-center mb-3 gap-2">
+        <input type="text" class="search-clientes-box" name="busqueda" placeholder="Buscar empleado..."
+            value="{{ request.args.get('busqueda', '') }}">
+        <select class="form-select" name="sucursal" style="max-width: 180px;">
+            <option value="">Todas las sucursales</option>
+            <option value="1" {% if request.args.get('sucursal') == '1' %}selected{% endif %}>Matriz</option>
+            <option value="2" {% if request.args.get('sucursal') == '2' %}selected{% endif %}>Reyes</option>
+            <option value="3" {% if request.args.get('sucursal') == '3' %}selected{% endif %}>Lerma</option>
+        </select>
+        <select class="form-select" name="estado" style="max-width: 150px;">
+            <option value="">Todos</option>
+            <option value="activo" {% if request.args.get('estado') == 'activo' %}selected{% endif %}>Activos</option>
+            <option value="inactivo" {% if request.args.get('estado') == 'inactivo' %}selected{% endif %}>Inactivos</option>
+        </select>
+        <button type="submit" class="btn btn-clientes-filter"><i class="bi bi-search"></i> Buscar</button>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-clientes align-middle">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Sucursal</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for empleado in empleados %}
+                <tr>
+                    <td>{{ empleado.nombre }} {{ empleado.apellido1 }} {{ empleado.apellido2 }}</td>
+                    <td>{{ empleado.correo }}</td>
+                    <td>{{ empleado.sucursal }}</td>
+                    <td>{{ empleado.rol }}</td>
+                    <td>
+                        {% if empleado.estado == 'activo' %}
+                        <span class="badge badge-clientes bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge badge-clientes bg-secondary">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="#" class="btn btn-sm btn-outline-primary action-btn-clientes" title="Editar" data-bs-toggle="modal"
+                            data-bs-target="#modalEditarEmpleado{{ empleado.id }}">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="#" class="btn btn-sm btn-outline-primary action-btn-clientes" title="Permisos" data-bs-toggle="modal"
+                            data-bs-target="#modalPermisosEmpleado{{ empleado.id }}">
+                            <i class="bi bi-shield-lock"></i>
+                        </a>
+                        {% if empleado.estado == 'activo' %}
+                        <a href="{{ url_for('empleados.baja_empleado', id=empleado.id) }}" class="btn btn-sm btn-outline-danger action-btn-clientes"
+                            title="Dar de baja"><i class="bi bi-person-x"></i></a>
+                        {% else %}
+                        <a href="{{ url_for('empleados.alta_empleado', id=empleado.id) }}"
+                            class="btn btn-sm btn-outline-success action-btn-clientes" title="Reactivar"><i class="bi bi-person-check"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- Modal: Nuevo Empleado -->
+<div class="modal fade" id="modalNuevoEmpleado" tabindex="-1" aria-labelledby="modalNuevoEmpleadoLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('empleados.nuevo_empleado') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalNuevoEmpleadoLabel">Nuevo Empleado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" name="nombre" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="apellido1" class="form-label">Apellido 1</label>
+                            <input type="text" class="form-control" name="apellido1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="apellido2" class="form-label">Apellido 2</label>
+                            <input type="text" class="form-control" name="apellido2" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="correo" class="form-label">Correo electrónico</label>
+                            <input type="email" class="form-control" name="correo" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sucursal" class="form-label">Sucursal</label>
+                            <select class="form-select" name="sucursal_id" required>
+                                {% for sucursal in sucursales %}
+                                <option value="{{ sucursal.id }}">{{ sucursal.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="rol" class="form-label">Rol</label>
+                            <select class="form-select" name="rol_id" required>
+                                {% for rol in roles %}
+                                <option value="{{ rol.id }}">{{ rol.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-clientes-main">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for empleado in empleados %}
+<!-- Modal: Gestión de Permisos -->
+<div class="modal fade" id="modalPermisosEmpleado{{ empleado.id }}" tabindex="-1"
+    aria-labelledby="modalPermisosEmpleadoLabel{{ empleado.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('empleados.gestionar_permisos', id=empleado.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPermisosEmpleadoLabel{{ empleado.id }}">
+                        Permisos de {{ empleado.nombre }} {{ empleado.apellido1 }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Permiso</th>
+                                <th class="text-center">Sí/No</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for permiso in empleado.permisos_rol %}
+                            <tr>
+                                <td>{{ permiso.descripcion }}</td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-flex justify-content-center">
+                                        <input class="form-check-input" type="checkbox" name="permiso_{{ permiso.id }}"
+                                            {% if permiso.id not in empleado.permisos_desactivados %}checked{% endif %}>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-clientes-main">Guardar permisos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

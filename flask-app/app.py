@@ -1,6 +1,6 @@
-# filepath: flask-app/app.py
 from flask import Flask, render_template, redirect, url_for
 import mysql.connector
+from flask_mail import Mail
 
 
 from routes.login import login_bp
@@ -8,25 +8,40 @@ from routes.dashboard import dashboard_bp
 from routes.clientes import clientes_bp
 from routes.inventario import bp_inventario
 from routes.producto import bp_producto
+from routes.empleados import empleados_bp
+from routes.usuarios import usuarios_bp
 
 
 
 app = Flask(__name__)
 app.secret_key = 'clave-secreta'
 
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'alejandralopeez2003@gmail.com'
+app.config['MAIL_PASSWORD'] = 'tcbo ndan smyc bqml'
+app.config['MAIL_DEFAULT_SENDER'] = 'alejandralopeez2003@gmail.com'
+
+mail = Mail(app)
+
+
 app.register_blueprint(login_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(clientes_bp)
 app.register_blueprint(bp_inventario)
 app.register_blueprint(bp_producto)
+app.register_blueprint(empleados_bp)
+app.register_blueprint(usuarios_bp)
 
 
 def get_db_connection():
     connection = mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='123456',
-        database='pruebaandamios'
+        host='db-instance1.cpggcscass83.us-east-2.rds.amazonaws.com',
+        user='admin',
+        password='12345678',
+        database='pruebacolosio'
     )
     return connection
 

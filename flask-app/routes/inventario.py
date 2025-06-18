@@ -1,9 +1,25 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from utils.db import get_db_connection
+from functools import wraps
+
+def requiere_permiso(nombre_permiso):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            permisos = session.get('permisos', [])
+            if nombre_permiso not in permisos:
+                flash('No tienes permiso para acceder a esta sección.', 'danger')
+                return redirect(url_for('dashboard.dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 
 bp_inventario = Blueprint('inventario', __name__, url_prefix='/inventario')
 
 @bp_inventario.route('/general')
+@requiere_permiso('ver_inventario_general')
 def inventario_general():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -31,7 +47,10 @@ def inventario_general():
     conn.close()
     return render_template('inventario/inventario_general.html', piezas=piezas, sucursales=sucursales)
 
+
+
 @bp_inventario.route('/agregar_pieza_general', methods=['POST'])
+@requiere_permiso('agregar_pieza_inventario_general')
 def agregar_pieza_general():
     nombre_pieza = request.form['nombre_pieza']
     categoria = request.form.get('categoria', '')
@@ -43,7 +62,10 @@ def agregar_pieza_general():
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
 
+
+
 @bp_inventario.route('/alta_baja_pieza', methods=['POST'])
+@requiere_permiso('modificar_existencias_inventario_general')
 def alta_baja_pieza():
     id_pieza = request.form['id_pieza']
     id_sucursal = request.form['id_sucursal']
@@ -86,7 +108,10 @@ def alta_baja_pieza():
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
 
+
+
 @bp_inventario.route('/transferir_pieza', methods=['POST'])
+@requiere_permiso('transferir_piezas_inventario')
 def transferir_pieza():
     id_pieza = request.form['id_pieza']
     id_sucursal_origen = request.form['id_sucursal_origen']
@@ -136,6 +161,7 @@ def transferir_pieza():
 ####################################
 
 @bp_inventario.route('/matriz')
+@requiere_permiso('ver_inventario_sucursal')
 def inventario_matriz():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -157,7 +183,10 @@ def inventario_matriz():
     conn.close()
     return render_template('inventario/inventario_matriz.html', piezas=piezas, sucursal=sucursal)
 
+
+
 @bp_inventario.route('/mandar_a_reparacion', methods=['POST'])
+@requiere_permiso('mandar_pieza_reparacion')
 def mandar_a_reparacion():
     id_pieza = request.form['id_pieza']
     id_sucursal = request.form['id_sucursal']
@@ -182,7 +211,11 @@ def mandar_a_reparacion():
     conn.close()
     return redirect(url_for('inventario.inventario_matriz'))
 
+
+
+
 @bp_inventario.route('/regresar_a_disponible', methods=['POST'])
+@requiere_permiso('regresar_pieza_disponible')
 def regresar_a_disponible():
     id_pieza = request.form['id_pieza']
     id_sucursal = request.form['id_sucursal']

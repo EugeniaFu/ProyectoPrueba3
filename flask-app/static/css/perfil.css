@@ -1,0 +1,108 @@
+/* ...existing code... */
+
+.perfil-container {
+    background: #f3f4f7;
+    border-radius: 18px;
+    padding: 2.5rem 2rem;
+    max-width: 700px;
+    margin: 2rem auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+.perfil-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+.perfil-foto {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #8b2323;
+    background: #fff;
+}
+.perfil-foto-btn {
+    margin-top: 0.5rem;
+    background: #8b2323;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 0.3rem 1.2rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.perfil-foto-btn:hover {
+    background: #a63c3c;
+}
+.perfil-datos {
+    flex: 1;
+}
+.perfil-datos label {
+    color: #1a355b;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+}
+.perfil-datos .dato {
+    font-size: 1.1rem;
+    margin-bottom: 0.7rem;
+    color: #222;
+}
+.perfil-rol {
+    font-size: 1.1rem;
+    color: #1a355b;
+    font-weight: 600;
+    margin-top: 1rem;
+}
+.perfil-btn-cambiar {
+    background: #1a355b;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    margin-top: 1.2rem;
+    transition: background 0.2s;
+}
+.perfil-btn-cambiar:hover {
+    background: #27477a;
+}
+.modal-header {
+    background: #1a355b;
+    color: #fff;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+.modal-footer .btn-primary {
+    background: #1a355b;
+    border: none;
+}
+.modal-footer .btn-primary:hover {
+    background: #27477a;
+}
+.password-req {
+    font-size: 0.95rem;
+    color: #27477a;
+    margin-bottom: 0.5rem;
+}
+.password-match {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.password-match.ok {
+    color: #198754; /* Bootstrap success */
+}
+.password-match.fail {
+    color: #b02a37; /* Bootstrap danger */
+}
+.toggle-password {
+    cursor: pointer;
+    color: #1a355b;
+    right: 1.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+    z-index: 2;
+    margin-left: 0;
+}

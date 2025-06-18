@@ -1,10 +1,24 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from utils.db import get_db_connection
+from functools import wraps
+
+def requiere_permiso(nombre_permiso):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            permisos = session.get('permisos', [])
+            if nombre_permiso not in permisos:
+                flash('No tienes permiso para acceder a esta sección.', 'danger')
+                return redirect(url_for('dashboard.dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 bp_producto = Blueprint('producto', __name__, url_prefix='/producto')
 
 # Mostrar productos
 @bp_producto.route('/productos')
+@requiere_permiso('ver_productos')
 def productos():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -32,8 +46,11 @@ def productos():
     conn.close()
     return render_template('inventario/productos.html', productos=productos, piezas=piezas)
 
+
+
 # Crear producto
 @bp_producto.route('/crear', methods=['POST'])
+@requiere_permiso('crear_producto')
 def crear_producto():
     nombre = request.form['nombre']
     descripcion = request.form.get('descripcion', '')
@@ -79,8 +96,11 @@ def crear_producto():
     flash('Producto guardado correctamente.', 'success')
     return redirect(url_for('producto.productos'))
 
+
+
 # Editar producto
 @bp_producto.route('/editar/<int:id_producto>', methods=['POST'])
+@requiere_permiso('editar_producto')
 def editar_producto(id_producto):
     nombre = request.form['nombre']
     descripcion = request.form.get('descripcion', '')
@@ -138,6 +158,7 @@ def editar_producto(id_producto):
 
 # Dar de baja producto (descontinuar)
 @bp_producto.route('/baja/<int:id_producto>', methods=['POST'])
+@requiere_permiso('baja_producto')
 def dar_baja_producto(id_producto):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -150,8 +171,11 @@ def dar_baja_producto(id_producto):
     flash('Producto descontinuado correctamente.', 'warning')
     return redirect(url_for('producto.productos'))
 
+
+
 # Dar de alta producto (activar)
 @bp_producto.route('/alta/<int:id_producto>', methods=['POST'])
+@requiere_permiso('alta_producto')
 def dar_alta_producto(id_producto):
     conn = get_db_connection()
     cursor = conn.cursor()

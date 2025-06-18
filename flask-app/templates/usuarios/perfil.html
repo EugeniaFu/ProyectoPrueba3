@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Mi Perfil{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+{% endblock %}
+{% block content %}
+<div class="perfil-container">
+    <div class="perfil-header">
+        <div class="text-center">
+            <img src="{{ usuario.foto_url or url_for('static', filename='img/default-user.png') }}" class="perfil-foto" id="imgPerfil" alt="Foto de perfil">
+            <form method="post" action="{{ url_for('usuarios.cambiar_foto') }}" enctype="multipart/form-data">
+                <input type="file" name="foto_perfil" accept="image/*" style="display:none;" id="inputFotoPerfil" onchange="this.form.submit()">
+                <button type="button" class="perfil-foto-btn" onclick="document.getElementById('inputFotoPerfil').click();">Cambiar foto</button>
+            </form>
+        </div>
+        <div class="perfil-datos">
+            <label>Usuario</label>
+            <div class="dato">{{ usuario.nombre }} {{ usuario.apellido1 }} {{ usuario.apellido2 }}</div>
+            <label>Correo electrónico</label>
+            <div class="dato">{{ usuario.correo }}</div>
+            <label>Sucursal</label>
+            <div class="dato">{{ usuario.sucursal_nombre }}</div>
+            <label>Rol</label>
+            <div class="dato perfil-rol">{{ usuario.rol_nombre }}</div>
+        </div>
+    </div>
+    <div class="text-end">
+        <button class="perfil-btn-cambiar" data-bs-toggle="modal" data-bs-target="#modalCambiarContrasena">
+            Cambiar contraseña
+        </button>
+    </div>
+</div>
+
+
+<!-- Modal Cambiar Contraseña -->
+<div class="modal fade" id="modalCambiarContrasena" tabindex="-1" aria-labelledby="modalCambiarContrasenaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{{ url_for('usuarios.perfil') }}" id="formCambiarContrasena" autocomplete="off">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalCambiarContrasenaLabel">Cambiar contraseña</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="password-req mb-2">
+            <i class="bi bi-info-circle"></i>
+            La contraseña debe tener <b>al menos 8 caracteres</b>, <b>una mayúscula</b> y <b>un carácter especial</b>.
+          </div>
+          <div class="mb-3 position-relative">
+            <label class="form-label">Nueva contraseña</label>
+            <input type="password" class="form-control pe-5" name="nueva_contraseña" id="nueva_contraseña" required minlength="8" autocomplete="new-password">
+            <span class="toggle-password position-absolute top-50 end-0 translate-middle-y px-2" onclick="togglePassword('nueva_contraseña', this)">
+              <i class="bi bi-eye"></i>
+            </span>
+          </div>
+          <div class="mb-3 position-relative">
+            <label class="form-label">Confirmar nueva contraseña</label>
+            <input type="password" class="form-control pe-5" name="confirmar_contraseña" id="confirmar_contraseña" required minlength="8" autocomplete="new-password">
+            <span class="toggle-password position-absolute top-50 end-0 translate-middle-y px-2" onclick="togglePassword('confirmar_contraseña', this)">
+              <i class="bi bi-eye"></i>
+            </span>
+          </div>
+          <div id="passwordHelp" class="form-text text-danger"></div>
+          <div id="passwordMatch" class="password-match"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+<script>
+function togglePassword(inputId, iconSpan) {
+    const input = document.getElementById(inputId);
+    const icon = iconSpan.querySelector('i');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = "password";
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+
+const nueva = document.getElementById('nueva_contraseña');
+const confirmar = document.getElementById('confirmar_contraseña');
+const help = document.getElementById('passwordHelp');
+const match = document.getElementById('passwordMatch');
+const regex = /^(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+function validarPassword() {
+    help.textContent = '';
+    match.textContent = '';
+    if (nueva.value && !regex.test(nueva.value)) {
+        help.textContent = 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un carácter especial.';
+    }
+    if (nueva.value && confirmar.value) {
+        if (nueva.value === confirmar.value) {
+            match.textContent = 'Las contraseñas coinciden.';
+            match.className = 'password-match ok';
+        } else {
+            match.textContent = 'Las contraseñas no coinciden.';
+            match.className = 'password-match fail';
+        }
+    }
+}
+
+nueva.addEventListener('input', validarPassword);
+confirmar.addEventListener('input', validarPassword);
+
+document.getElementById('formCambiarContrasena').addEventListener('submit', function(e) {
+    if (nueva.value !== confirmar.value) {
+        match.textContent = 'Las contraseñas no coinciden.';
+        match.className = 'password-match fail';
+        e.preventDefault();
+    } else if (!regex.test(nueva.value)) {
+        help.textContent = 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un carácter especial.';
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

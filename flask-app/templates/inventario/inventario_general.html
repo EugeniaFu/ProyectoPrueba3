@@ -19,8 +19,12 @@
   <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
     <input type="text" id="buscadorPiezas" class="search-box" placeholder="Buscar pieza...">
     <div class="btn-group" role="group">
-      <a href="{{ url_for('inventario.inventario_general') }}" class="btn btn-tab active">Inventario</a>
-      <a href="{{ url_for('producto.productos') }}" class="btn btn-tab">Productos</a>
+      {% if 'ver_inventario_general' in session['permisos'] %}
+      <a href="{{ url_for('inventario.inventario_general') }}"
+        class="btn btn-tab {% if active_tab == 'inventario' %}active{% endif %}">Inventario</a>
+      {% endif %}
+      <a href="{{ url_for('producto.productos') }}"
+        class="btn btn-tab {% if active_tab == 'productos' %}active{% endif %}">Productos</a>
     </div>
   </div>
 
