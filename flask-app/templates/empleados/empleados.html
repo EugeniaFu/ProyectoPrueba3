@@ -181,5 +181,61 @@
         </div>
     </div>
 </div>
+
+
+<!-- Modal: Editar Empleado -->
+<div class="modal fade" id="modalEditarEmpleado{{ empleado.id }}" tabindex="-1"
+    aria-labelledby="modalEditarEmpleadoLabel{{ empleado.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('empleados.editar_empleado', id=empleado.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditarEmpleadoLabel{{ empleado.id }}">Editar Empleado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" name="nombre" value="{{ empleado.nombre }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Apellido 1</label>
+                            <input type="text" class="form-control" name="apellido1" value="{{ empleado.apellido1 }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Apellido 2</label>
+                            <input type="text" class="form-control" name="apellido2" value="{{ empleado.apellido2 }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Correo electrónico</label>
+                            <input type="email" class="form-control" name="correo" value="{{ empleado.correo }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sucursal</label>
+                            <select class="form-select" name="sucursal_id" required>
+                                {% for sucursal in sucursales %}
+                                <option value="{{ sucursal.id }}" {% if sucursal.id == empleado.sucursal_id %}selected{% endif %}>{{ sucursal.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Rol</label>
+                            <select class="form-select" name="rol_id" required>
+                                {% for rol in roles %}
+                                <option value="{{ rol.id }}" {% if rol.id == empleado.rol_id %}selected{% endif %}>{{ rol.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-clientes-main">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endfor %}
 {% endblock %}

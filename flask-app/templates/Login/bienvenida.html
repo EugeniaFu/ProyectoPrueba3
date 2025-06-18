@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenido a Andamios Colosio</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f5f5f5; margin:0; padding:0;">
+    <div style="max-width: 500px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #ccc; overflow: hidden;">
+        <div style="background: #1a237e; padding: 24px 0; text-align: center;">
+            <img src="{{ logo_url }}" alt="Andamios Colosio" style="height: 60px;">
+        </div>
+        <div style="padding: 32px;">
+            <h2 style="color: #1a237e;">¡Bienvenido, {{ nombre }}!</h2>
+            <p>Tu cuenta en <strong>Andamios Colosio</strong> ha sido creada exitosamente.</p>
+            <p><b>Correo:</b> {{ correo }}</p>
+            <p><b>Contraseña temporal:</b> <span style="background:#e3e3e3; padding:4px 10px; border-radius:5px; font-family:monospace;">{{ temp_password }}</span></p>
+            <p style="color: #b02a37; font-size: 15px;">
+                Por seguridad, deberás cambiar tu contraseña al iniciar sesión por primera vez.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="{{ login_url }}" style="background: #1a237e; color: #fff; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-size: 18px;" target="_blank">Iniciar sesión</a>
+            </div>
+            <p style="color: #888; font-size: 14px;">
+                Si tienes dudas o problemas para acceder, contacta al administrador del sistema.
+            </p>
+        </div>
+        <div style="background: #f5f5f5; color: #888; text-align: center; padding: 16px; font-size: 13px;">
+            © {{ year }} Andamios Colosio. Todos los derechos reservados.
+        </div>
+    </div>
+</body>
+</html>

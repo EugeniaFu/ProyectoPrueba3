@@ -89,7 +89,6 @@ def empleados():
     )
 
 
-
 @empleados_bp.route('/nuevo', methods=['POST'])
 @requiere_permiso('crear_empleado')
 def nuevo_empleado():
@@ -111,12 +110,19 @@ def nuevo_empleado():
         VALUES (%s, %s, %s, %s, %s, %s, %s, 'activo', TRUE)
     """, (nombre, apellido1, apellido2, correo, password_hash, rol_id, sucursal_id))
     conn.commit()
-
     try:
         msg = Message(
             subject="Bienvenido a Andamios Colosio",
             recipients=[correo],
-            body=f"Hola {nombre},\n\nTu cuenta ha sido creada.\nTu contraseña temporal es: {temp_password}\nPor favor, cámbiala al iniciar sesión.\n\nSaludos."
+            html=render_template(
+                'login/bienvenida.html',
+                nombre=nombre,
+                correo=correo,
+                temp_password=temp_password,
+                login_url=url_for('login.login', _external=True),
+                logo_url=url_for('static', filename='img/logo.png', _external=True),
+                year=2025
+            )
         )
         mail = current_app.extensions['mail']
         mail.send(msg)
@@ -125,6 +131,9 @@ def nuevo_empleado():
         flash(f'Empleado registrado, pero no se pudo enviar el correo: {e}', 'warning')
 
     return redirect(url_for('empleados.empleados'))
+
+
+
 
 @empleados_bp.route('/editar/<int:id>', methods=['POST'])
 @requiere_permiso('editar_empleado')
