@@ -1,9 +1,10 @@
 let filtroActual = 'todos';
 
-function mostrarSelectorPiezas() {
-  var tipo = document.getElementById('tipoProducto').value;
-  document.getElementById('piezasIndividual').style.display = tipo === 'individual' ? 'block' : 'none';
-  document.getElementById('piezasKit').style.display = tipo === 'conjunto' ? 'block' : 'none';
+// Para cambiar el tipo de producto en edición
+function mostrarSelectorPiezasEditar(idProducto) {
+  const tipo = document.getElementById('tipoProductoEditar' + idProducto).value;
+  document.getElementById('piezasIndividualEditar' + idProducto).style.display = tipo === 'individual' ? 'block' : 'none';
+  document.getElementById('piezasKitEditar' + idProducto).style.display = tipo === 'conjunto' ? 'block' : 'none';
 }
 
 function agregarKitPiezaRow() {
@@ -102,3 +103,45 @@ document.addEventListener('DOMContentLoaded', function() {
     window.piezasOptionsHTML = select.innerHTML;
   }
 });
+
+// --------- CORRECCIÓN PARA CAMPOS DE PRECIOS NUEVO PRODUCTO ---------
+function toggleCamposPrecioNuevo() {
+  const check = document.getElementById('precioUnicoNuevo');
+  // El campo de precio por día siempre está visible, solo cambia required
+  document.querySelector('input[name="precio_dia"]').required = true;
+  // Los campos de rango se ocultan si es precio único
+  const camposRangos = document.getElementById('camposRangosNuevo');
+  if (check.checked) {
+    camposRangos.style.display = 'none';
+    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function(input) {
+      input.required = false;
+    });
+  } else {
+    camposRangos.style.display = 'flex';
+    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function(input) {
+      input.required = true;
+    });
+  }
+}
+
+
+// Para editar producto
+function toggleCamposPrecioEditar(idProducto) {
+  const check = document.getElementById('precioUnicoEditar' + idProducto);
+  // El campo de precio por día siempre está visible, solo cambia required
+  const inputDia = document.querySelector(`#campoPrecioDiaEditar${idProducto} input[name="precio_dia"]`);
+  if (inputDia) inputDia.required = true;
+  // Los campos de rango se ocultan si es precio único
+  const camposRangos = document.getElementById('camposRangosEditar' + idProducto);
+  if (check.checked) {
+    camposRangos.style.display = 'none';
+    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function(input) {
+      input.required = false;
+    });
+  } else {
+    camposRangos.style.display = 'flex';
+    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function(input) {
+      input.required = true;
+    });
+  }
+}

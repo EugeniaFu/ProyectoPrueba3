@@ -20,10 +20,6 @@ def requiere_permiso(nombre_permiso):
 
 
 
-
-
-
-
 clientes_bp = Blueprint('clientes', __name__, url_prefix='/clientes')
 
 @clientes_bp.route('/', methods=['GET'])
@@ -125,6 +121,8 @@ def editar_cliente(id):
             return redirect(url_for('clientes.clientes'))
         return render_template('clientes/editar_cliente.html', cliente=cliente, documentos=documentos)
 
+
+
 @clientes_bp.route('/baja/<int:id>')
 @requiere_permiso('baja_cliente')
 def baja_cliente(id):
@@ -137,6 +135,8 @@ def baja_cliente(id):
     flash("Cliente dado de baja correctamente.", "info")
     return redirect(url_for('clientes.clientes'))
 
+
+
 @clientes_bp.route('/reactivar/<int:id>')
 @requiere_permiso('reactivar_cliente')
 def reactivar_cliente(id):
@@ -148,6 +148,8 @@ def reactivar_cliente(id):
     conn.close()
     flash("Cliente reactivado correctamente.", "success")
     return redirect(url_for('clientes.clientes', ver_bajas=1))
+
+
 
 @clientes_bp.route('/eliminar/<int:id>')
 @requiere_permiso('eliminar_cliente')

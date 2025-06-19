@@ -22,9 +22,9 @@ bp_producto = Blueprint('producto', __name__, url_prefix='/producto')
 def productos():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    # Traer productos y precios
+    # Traer productos y precios (incluye precio_dia)
     cursor.execute("""
-        SELECT p.*, pr.precio_7dias, pr.precio_15dias, pr.precio_30dias, pr.precio_31mas
+        SELECT p.*, pr.precio_dia, pr.precio_7dias, pr.precio_15dias, pr.precio_30dias, pr.precio_31mas
         FROM productos p
         LEFT JOIN producto_precios pr ON p.id_producto = pr.id_producto
         ORDER BY p.estatus DESC, p.nombre
@@ -46,8 +46,6 @@ def productos():
     conn.close()
     return render_template('inventario/productos.html', productos=productos, piezas=piezas)
 
-
-
 # Crear producto
 @bp_producto.route('/crear', methods=['POST'])
 @requiere_permiso('crear_producto')
@@ -59,20 +57,20 @@ def crear_producto():
     precio_15dias = request.form['precio_15dias']
     precio_30dias = request.form['precio_30dias']
     precio_31mas = request.form['precio_31mas']
+    precio_unico = 1 if request.form.get('precio_unico') == '1' else 0
+    precio_dia = request.form.get('precio_dia') or None
 
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO productos (nombre, descripcion, tipo, estatus)
-        VALUES (%s, %s, %s, 'activo')
-    """, (nombre, descripcion, tipo))
+                   INSERT INTO productos (nombre, descripcion, tipo, estatus, precio_unico)
+                   VALUES (%s, %s, %s, 'activo', %s)
+                   """, (nombre, descripcion, tipo, precio_unico))
     id_producto = cursor.lastrowid
-
-    # Insertar precios
     cursor.execute("""
-        INSERT INTO producto_precios (id_producto, precio_7dias, precio_15dias, precio_30dias, precio_31mas)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_producto, precio_7dias, precio_15dias, precio_30dias, precio_31mas))
+                   INSERT INTO producto_precios (id_producto, precio_dia, precio_7dias, precio_15dias, precio_30dias, precio_31mas)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   """, (id_producto, precio_dia, precio_7dias, precio_15dias, precio_30dias, precio_31mas))
 
     # Insertar piezas asociadas
     if tipo == 'individual':
@@ -96,42 +94,32 @@ def crear_producto():
     flash('Producto guardado correctamente.', 'success')
     return redirect(url_for('producto.productos'))
 
-
-
 # Editar producto
 @bp_producto.route('/editar/<int:id_producto>', methods=['POST'])
 @requiere_permiso('editar_producto')
 def editar_producto(id_producto):
     nombre = request.form['nombre']
     descripcion = request.form.get('descripcion', '')
+    tipo = request.form['tipo']  # <-- AGREGADO
     precio_7dias = request.form['precio_7dias']
     precio_15dias = request.form['precio_15dias']
     precio_30dias = request.form['precio_30dias']
     precio_31mas = request.form['precio_31mas']
+    precio_unico = 1 if request.form.get('precio_unico') == '1' else 0
+    precio_dia = request.form.get('precio_dia') or None
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Actualiza datos generales
+    cursor.execute(""" 
+                   UPDATE productos SET nombre=%s, descripcion=%s, tipo=%s, precio_unico=%s WHERE id_producto=%s
+                   """, (nombre, descripcion, tipo, precio_unico, id_producto))
     cursor.execute("""
-        UPDATE productos SET nombre=%s, descripcion=%s WHERE id_producto=%s
-    """, (nombre, descripcion, id_producto))
-    cursor.execute("""
-        UPDATE producto_precios SET precio_7dias=%s, precio_15dias=%s, precio_30dias=%s, precio_31mas=%s
-        WHERE id_producto=%s
-    """, (precio_7dias, precio_15dias, precio_30dias, precio_31mas, id_producto))
-
+                   UPDATE producto_precios SET precio_dia=%s, precio_7dias=%s, precio_15dias=%s, precio_30dias=%s, precio_31mas=%s
+                   WHERE id_producto=%s
+                   """, (precio_dia, precio_7dias, precio_15dias, precio_30dias, precio_31mas, id_producto))
     # Elimina piezas asociadas actuales
     cursor.execute("DELETE FROM producto_piezas WHERE id_producto=%s", (id_producto,))
-
-    # Detecta tipo de producto (individual o conjunto)
-    tipo = None
-    cursor.execute("SELECT tipo FROM productos WHERE id_producto=%s", (id_producto,))
-    tipo_row = cursor.fetchone()
-    if tipo_row:
-        tipo = tipo_row[0]
-
-    # Inserta nuevas piezas asociadas
+    # Inserta nuevas piezas asociadas según el tipo actualizado
     if tipo == 'individual':
         id_pieza = request.form['pieza_individual']
         cursor.execute("""
@@ -170,8 +158,6 @@ def dar_baja_producto(id_producto):
     conn.close()
     flash('Producto descontinuado correctamente.', 'warning')
     return redirect(url_for('producto.productos'))
-
-
 
 # Dar de alta producto (activar)
 @bp_producto.route('/alta/<int:id_producto>', methods=['POST'])

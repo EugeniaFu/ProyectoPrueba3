@@ -8,14 +8,14 @@
 
 {% block content %}
 {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
 {% endwith %}
 
 <div class="box-container">
@@ -42,7 +42,8 @@
     <div class="btn-group" role="group">
       <button class="btn btn-outline-primary btn-sm" onclick="filtrarProductos('todos')">Todos</button>
       <button class="btn btn-outline-success btn-sm" onclick="filtrarProductos('activo')">Activos</button>
-      <button class="btn btn-outline-secondary btn-sm" onclick="filtrarProductos('descontinuado')">Descontinuados</button>
+      <button class="btn btn-outline-secondary btn-sm"
+        onclick="filtrarProductos('descontinuado')">Descontinuados</button>
     </div>
   </div>
   <div class="table-responsive">
@@ -52,10 +53,11 @@
           <th>Producto</th>
           <th>Descripción</th>
           <th>Tipo</th>
-          <th>Precios<br><small>(1-7 / 8-15 / 16-30 / 31+ días)</small></th>
+          <th>Precios<br><small>(1/ 2-7 / 8-15 / 16-30 / 31+ días o único)</small></th>
           <th>Piezas asociadas</th>
           <th>Estatus</th>
-          {% if 'editar_producto' in session['permisos'] or 'baja_producto' in session['permisos'] or 'alta_producto' in session['permisos'] %}
+          {% if 'editar_producto' in session['permisos'] or 'baja_producto' in session['permisos'] or 'alta_producto' in
+          session['permisos'] %}
           <th>Acciones</th>
           {% endif %}
         </tr>
@@ -67,28 +69,39 @@
           <td>{{ producto.descripcion }}</td>
           <td>{{ 'Kit' if producto.tipo == 'conjunto' else 'Individual' }}</td>
           <td>
-            ${{ producto.precio_7dias }} /
-            ${{ producto.precio_15dias }} /
-            ${{ producto.precio_30dias }} /
-            ${{ producto.precio_31mas }}
+            <div>
+              <strong>1 día:</strong>
+              <span>${{ producto.precio_dia }}</span>
+            </div>
+            {% if producto.precio_unico %}
+            <div>
+              <span class="badge bg-info text-dark">Precio único por día</span>
+            </div>
+            {% else %}
+            <div><strong>1-7 días:</strong> ${{ producto.precio_7dias }}</div>
+            <div><strong>8-15 días:</strong> ${{ producto.precio_15dias }}</div>
+            <div><strong>16-30 días:</strong> ${{ producto.precio_30dias }}</div>
+            <div><strong>31+ días:</strong> ${{ producto.precio_31mas }}</div>
+            {% endif %}
           </td>
           <td>
             {% if producto.tipo == 'conjunto' %}
-              {% for pieza in producto.piezas %}
-                {{ pieza.nombre_pieza }} (x{{ pieza.cantidad }})<br>
-              {% endfor %}
+            {% for pieza in producto.piezas %}
+            {{ pieza.nombre_pieza }} (x{{ pieza.cantidad }})<br>
+            {% endfor %}
             {% else %}
-              {{ producto.piezas[0].nombre_pieza }}
+            {{ producto.piezas[0].nombre_pieza }}
             {% endif %}
           </td>
           <td>
             {% if producto.estatus == 'activo' %}
-              <span class="badge bg-success">Activo</span>
+            <span class="badge bg-success">Activo</span>
             {% else %}
-              <span class="badge bg-secondary">Descontinuado</span>
+            <span class="badge bg-secondary">Descontinuado</span>
             {% endif %}
           </td>
-          {% if 'editar_producto' in session['permisos'] or 'baja_producto' in session['permisos'] or 'alta_producto' in session['permisos'] %}
+          {% if 'editar_producto' in session['permisos'] or 'baja_producto' in session['permisos'] or 'alta_producto' in
+          session['permisos'] %}
           <td>
             {% if 'editar_producto' in session['permisos'] %}
             <button class="btn btn-primary btn-sm action-btn" data-bs-toggle="modal"
@@ -122,72 +135,93 @@
   </div>
 </div>
 
-<!-- Modal Editar Producto (solo si tiene permiso) -->
+<!-- Modal Editar Producto -->
 {% if 'editar_producto' in session['permisos'] %}
-  {% for producto in productos %}
-  <div class="modal fade" id="modalEditarProducto{{ producto.id_producto }}" tabindex="-1"
-    aria-labelledby="modalEditarProductoLabel{{ producto.id_producto }}" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <form method="POST" action="{{ url_for('producto.editar_producto', id_producto=producto.id_producto) }}">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalEditarProductoLabel{{ producto.id_producto }}">
-              Editar Producto
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+{% for producto in productos %}
+<div class="modal fade" id="modalEditarProducto{{ producto.id_producto }}" tabindex="-1"
+  aria-labelledby="modalEditarProductoLabel{{ producto.id_producto }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form method="POST" action="{{ url_for('producto.editar_producto', id_producto=producto.id_producto) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEditarProductoLabel{{ producto.id_producto }}">
+            Editar Producto
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" name="nombre" value="{{ producto.nombre }}" required>
+            </div>
+            <div class="col-md-6 mb-2">
+              <label class="form-label">Tipo</label>
+              <select class="form-select" name="tipo" id="tipoProductoEditar{{ producto.id_producto }}" required
+                onchange="mostrarSelectorPiezasEditar({{ producto.id_producto }})">
+                <option value="individual" {% if producto.tipo=='individual' %}selected{% endif %}>Individual</option>
+                <option value="conjunto" {% if producto.tipo=='conjunto' %}selected{% endif %}>Kit (conjunto)</option>
+              </select>
+            </div>
           </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col-md-6 mb-2">
-                <label class="form-label">Nombre</label>
-                <input type="text" class="form-control" name="nombre" value="{{ producto.nombre }}" required>
-              </div>
-              <div class="col-md-6 mb-2">
-                <label class="form-label">Tipo</label>
-                <input type="text" class="form-control"
-                  value="{{ 'Kit' if producto.tipo == 'conjunto' else 'Individual' }}" disabled>
-              </div>
-            </div>
-            <div class="mb-2">
-              <label class="form-label">Descripción</label>
-              <textarea class="form-control" name="descripcion">{{ producto.descripcion }}</textarea>
-            </div>
-            <div class="row">
-              <div class="col-md-3 mb-2">
-                <label class="form-label">Precio 1-7 días</label>
-                <input type="number" step="0.01" class="form-control" name="precio_7dias"
-                  value="{{ producto.precio_7dias }}" required>
-              </div>
-              <div class="col-md-3 mb-2">
-                <label class="form-label">Precio 8-15 días</label>
-                <input type="number" step="0.01" class="form-control" name="precio_15dias"
-                  value="{{ producto.precio_15dias }}" required>
-              </div>
-              <div class="col-md-3 mb-2">
-                <label class="form-label">Precio 16-30 días</label>
-                <input type="number" step="0.01" class="form-control" name="precio_30dias"
-                  value="{{ producto.precio_30dias }}" required>
-              </div>
-              <div class="col-md-3 mb-2">
-                <label class="form-label">Precio 31+ días</label>
-                <input type="number" step="0.01" class="form-control" name="precio_31mas"
-                  value="{{ producto.precio_31mas }}" required>
+          <div class="mb-2">
+            <label class="form-label">Descripción</label>
+            <textarea class="form-control" name="descripcion">{{ producto.descripcion }}</textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-3 mb-2">
+              <label class="form-label">¿Precio único por día?</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="precioUnicoEditar{{ producto.id_producto }}"
+                  name="precio_unico" value="1" {% if producto.precio_unico %}checked{% endif %}
+                  onchange="toggleCamposPrecioEditar({{ producto.id_producto }})">
+                <label class="form-check-label" for="precioUnicoEditar{{ producto.id_producto }}">Sí</label>
               </div>
             </div>
-            <hr>
-            {% if producto.tipo == 'individual' %}
-            <div class="mb-2">
+            <div class="col-md-3 mb-2" id="campoPrecioDiaEditar{{ producto.id_producto }}">
+              <label class="form-label">Precio por 1 día</label>
+              <input type="number" step="0.01" class="form-control" name="precio_dia"
+                value="{{ producto.precio_dia or '' }}" required>
+            </div>
+          </div>
+          <div class="row" id="camposRangosEditar{{ producto.id_producto }}">
+            <div class="col-md-3 mb-2">
+              <label class="form-label">Precio 1-7 días</label>
+              <input type="number" step="0.01" class="form-control" name="precio_7dias"
+                value="{{ producto.precio_7dias or '' }}">
+            </div>
+            <div class="col-md-3 mb-2">
+              <label class="form-label">Precio 8-15 días</label>
+              <input type="number" step="0.01" class="form-control" name="precio_15dias"
+                value="{{ producto.precio_15dias or '' }}">
+            </div>
+            <div class="col-md-3 mb-2">
+              <label class="form-label">Precio 16-30 días</label>
+              <input type="number" step="0.01" class="form-control" name="precio_30dias"
+                value="{{ producto.precio_30dias or '' }}">
+            </div>
+            <div class="col-md-3 mb-2">
+              <label class="form-label">Precio 31+ días</label>
+              <input type="number" step="0.01" class="form-control" name="precio_31mas"
+                value="{{ producto.precio_31mas or '' }}">
+            </div>
+          </div>
+          <hr>
+          <div class="mb-2" id="selectorPiezasEditar{{ producto.id_producto }}">
+            <div id="piezasIndividualEditar{{ producto.id_producto }}"
+              style="display:{{ 'block' if producto.tipo == 'individual' else 'none' }};">
               <label class="form-label">Pieza asociada</label>
               <select class="form-select" name="pieza_individual">
                 {% for pieza in piezas %}
-                <option value="{{ pieza.id_pieza }}" {% if producto.piezas[0].nombre_pieza==pieza.nombre_pieza %}selected{% endif %}>
+                <option value="{{ pieza.id_pieza }}" {% if producto.piezas[0].nombre_pieza==pieza.nombre_pieza
+                  %}selected{% endif %}>
                   {{ pieza.nombre_pieza }}
                 </option>
                 {% endfor %}
               </select>
             </div>
-            {% else %}
-            <div class="mb-2">
+            <div id="piezasKitEditar{{ producto.id_producto }}"
+              style="display:{{ 'block' if producto.tipo == 'conjunto' else 'none' }};">
               <label class="form-label">Piezas del kit</label>
               <div id="kitPiezasContainerEditar{{ producto.id_producto }}">
                 {% for pieza in producto.piezas %}
@@ -215,20 +249,22 @@
               <button type="button" class="btn btn-outline-primary btn-sm"
                 onclick="agregarKitPiezaRowEditar({{producto.id_producto}})"> Agregar pieza</button>
             </div>
-            {% endif %}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar cambios</button>
           </div>
         </div>
-      </form>
-    </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </div>
+    </form>
   </div>
-  {% endfor %}
+</div>
+{% endfor %}
 {% endif %}
 
-<!-- Modal Nuevo Producto solo si tiene permiso -->
+
+
+<!-- Modal Nuevo Producto -->
 {% if 'crear_producto' in session['permisos'] %}
 <div class="modal fade" id="modalNuevoProducto" tabindex="-1" aria-labelledby="modalNuevoProductoLabel"
   aria-hidden="true">
@@ -258,6 +294,20 @@
             <textarea class="form-control" name="descripcion"></textarea>
           </div>
           <div class="row">
+            <div class="col-md-3 mb-2">
+              <label class="form-label">¿Precio único por día?</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="precioUnicoNuevo" name="precio_unico" value="1"
+                  onchange="toggleCamposPrecioNuevo()">
+                <label class="form-check-label" for="precioUnicoNuevo">Sí</label>
+              </div>
+            </div>
+            <div class="col-md-3 mb-2" id="campoPrecioDiaNuevo">
+              <label class="form-label">Precio por 1 día</label>
+              <input type="number" step="0.01" class="form-control" name="precio_dia" required>
+            </div>
+          </div>
+          <div class="row" id="camposRangosNuevo">
             <div class="col-md-3 mb-2">
               <label class="form-label">Precio 1-7 días</label>
               <input type="number" step="0.01" class="form-control" name="precio_7dias" required>
@@ -319,8 +369,11 @@
   </div>
 </div>
 {% endif %}
+
+
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/producto.js') }}"></script>
+
 {% endblock %}

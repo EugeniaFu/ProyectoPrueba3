@@ -1,5 +1,4 @@
 from flask import Flask, render_template, redirect, url_for
-import mysql.connector
 from flask_mail import Mail
 
 
@@ -36,14 +35,7 @@ app.register_blueprint(empleados_bp)
 app.register_blueprint(usuarios_bp)
 
 
-def get_db_connection():
-    connection = mysql.connector.connect(
-        host='db-instance1.cpggcscass83.us-east-2.rds.amazonaws.com',
-        user='admin',
-        password='12345678',
-        database='pruebacolosio'
-    )
-    return connection
+
 
 @app.route('/')
 def home():
