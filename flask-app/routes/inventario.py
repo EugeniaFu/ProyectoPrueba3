@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from utils.db import get_db_connection
 from functools import wraps
+from flask import session
 
 def requiere_permiso(nombre_permiso):
     def decorator(f):
@@ -26,11 +27,11 @@ def inventario_general():
     cursor.execute("SELECT id, nombre FROM sucursales")
     sucursales = cursor.fetchall()
     cursor.execute("""
-        SELECT p.id_pieza, p.nombre_pieza, p.categoria, p.descripcion,
+        SELECT p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion,
                SUM(i.total) AS total_empresa
         FROM piezas p
         LEFT JOIN inventario_sucursal i ON p.id_pieza = i.id_pieza
-        GROUP BY p.id_pieza, p.nombre_pieza, p.categoria, p.descripcion
+        GROUP BY p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion
     """)
     piezas = cursor.fetchall()
     for pieza in piezas:
@@ -53,11 +54,56 @@ def inventario_general():
 @requiere_permiso('agregar_pieza_inventario_general')
 def agregar_pieza_general():
     nombre_pieza = request.form['nombre_pieza']
+    codigo_pieza = request.form['codigo_pieza']
     categoria = request.form.get('categoria', '')
     descripcion = request.form.get('descripcion', '')
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO piezas (nombre_pieza, categoria, descripcion) VALUES (%s, %s, %s)", (nombre_pieza, categoria, descripcion))
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id_pieza FROM piezas WHERE codigo_pieza=%s", (codigo_pieza,))
+    existe = cursor.fetchone()
+    if existe:
+        # Trae los datos para la tabla
+        cursor.execute("SELECT id, nombre FROM sucursales")
+        sucursales = cursor.fetchall()
+        cursor.execute("""
+            SELECT p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion,
+                   SUM(i.total) AS total_empresa
+            FROM piezas p
+            LEFT JOIN inventario_sucursal i ON p.id_pieza = i.id_pieza
+            GROUP BY p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion
+        """)
+        piezas = cursor.fetchall()
+        for pieza in piezas:
+            pieza['sucursales'] = {}
+            for suc in sucursales:
+                cursor.execute("""
+                    SELECT total, disponibles, rentadas, daniadas, en_reparacion
+                    FROM inventario_sucursal
+                    WHERE id_pieza=%s AND id_sucursal=%s
+                """, (pieza['id_pieza'], suc['id']))
+                datos = cursor.fetchone() or {'total': 0, 'disponibles': 0, 'rentadas': 0, 'daniadas': 0, 'en_reparacion': 0}
+                pieza['sucursales'][suc['id']] = datos
+        cursor.close()
+        conn.close()
+        # Renderiza la vista con el modal abierto y los datos previos
+        return render_template(
+            'inventario/inventario_general.html',
+            piezas=piezas,
+            sucursales=sucursales,
+            show_modal_nueva_pieza=True,
+            error_codigo='El código ingresado ya existe. Por favor ingresa uno diferente.',
+            form_data={
+                'nombre_pieza': nombre_pieza,
+                'codigo_pieza': codigo_pieza,
+                'categoria': categoria,
+                'descripcion': descripcion
+            }
+        )
+    # Si no existe, inserta normalmente
+    cursor.execute(
+        "INSERT INTO piezas (codigo_pieza, nombre_pieza, categoria, descripcion) VALUES (%s, %s, %s, %s)",
+        (codigo_pieza, nombre_pieza, categoria, descripcion)
+    )
     conn.commit()
     cursor.close()
     conn.close()
@@ -69,20 +115,67 @@ def agregar_pieza_general():
 @requiere_permiso('modificar_existencias_inventario_general')
 def editar_pieza(id_pieza):
     nombre_pieza = request.form['nombre_pieza']
+    codigo_pieza = request.form['codigo_pieza']
     categoria = request.form.get('categoria', '')
     descripcion = request.form.get('descripcion', '')
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE piezas SET nombre_pieza=%s, categoria=%s, descripcion=%s WHERE id_pieza=%s",
-                   (nombre_pieza, categoria, descripcion, id_pieza))
+    cursor = conn.cursor(dictionary=True)
+    # Verifica si ya existe el código en otra pieza
+    cursor.execute("SELECT id_pieza FROM piezas WHERE codigo_pieza=%s AND id_pieza!=%s", (codigo_pieza, id_pieza))
+    existe = cursor.fetchone()
+    if existe:
+        # Trae los datos para la tabla
+        cursor.execute("SELECT id, nombre FROM sucursales")
+        sucursales = cursor.fetchall()
+        cursor.execute("""
+            SELECT p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion,
+                   SUM(i.total) AS total_empresa
+            FROM piezas p
+            LEFT JOIN inventario_sucursal i ON p.id_pieza = i.id_pieza
+            GROUP BY p.id_pieza, p.codigo_pieza, p.nombre_pieza, p.categoria, p.descripcion
+        """)
+        piezas = cursor.fetchall()
+        for pieza in piezas:
+            pieza['sucursales'] = {}
+            for suc in sucursales:
+                cursor.execute("""
+                    SELECT total, disponibles, rentadas, daniadas, en_reparacion
+                    FROM inventario_sucursal
+                    WHERE id_pieza=%s AND id_sucursal=%s
+                """, (pieza['id_pieza'], suc['id']))
+                datos = cursor.fetchone() or {'total': 0, 'disponibles': 0, 'rentadas': 0, 'daniadas': 0, 'en_reparacion': 0}
+                pieza['sucursales'][suc['id']] = datos
+        cursor.close()
+        conn.close()
+        # Renderiza la vista con el modal de editar abierto y los datos previos
+        return render_template(
+            'inventario/inventario_general.html',
+            piezas=piezas,
+            sucursales=sucursales,
+            show_modal_editar_pieza=id_pieza,
+            error_codigo_editar='El código ingresado ya existe en otra pieza. Por favor ingresa uno diferente.',
+            form_data_editar={
+                'nombre_pieza': nombre_pieza,
+                'codigo_pieza': codigo_pieza,
+                'categoria': categoria,
+                'descripcion': descripcion
+            }
+        )
+    # Si no existe, actualiza normalmente
+    cursor.execute(
+        "UPDATE piezas SET codigo_pieza=%s, nombre_pieza=%s, categoria=%s, descripcion=%s WHERE id_pieza=%s",
+        (codigo_pieza, nombre_pieza, categoria, descripcion, id_pieza)
+    )
     conn.commit()
     cursor.close()
     conn.close()
-    flash('Pieza editada correctamente.', 'success')
     return redirect(url_for('inventario.inventario_general'))
 
 
 
+from flask import session
+
+# ...existing code...
 
 @bp_inventario.route('/alta_baja_pieza', methods=['POST'])
 @requiere_permiso('modificar_existencias_inventario_general')
@@ -92,6 +185,7 @@ def alta_baja_pieza():
     cantidad = int(request.form['cantidad'])
     tipo = request.form['tipo']
     descripcion = request.form.get('descripcion', '') if tipo == 'baja' else None
+    usuario_id = session.get('usuario_id')  # <-- Obtén el usuario de la sesión
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -118,16 +212,15 @@ def alta_baja_pieza():
                 (id_pieza, id_sucursal, total, disponibles, rentadas, daniadas, en_reparacion) 
                 VALUES (%s, %s, %s, %s, 0, 0, 0)
             """, (id_pieza, id_sucursal, cantidad, cantidad))
-    # Registrar movimiento para reporte
+    # Registrar movimiento para reporte (ahora incluye usuario)
     cursor.execute("""
-        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo, cantidad, descripcion)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_pieza, id_sucursal, tipo, cantidad, descripcion))
+        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (id_pieza, id_sucursal, tipo, cantidad, descripcion, usuario_id))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
-
 
 
 @bp_inventario.route('/transferir_pieza', methods=['POST'])
@@ -137,6 +230,7 @@ def transferir_pieza():
     id_sucursal_origen = request.form['id_sucursal_origen']
     id_sucursal_destino = request.form['id_sucursal_destino']
     cantidad = int(request.form['cantidad'])
+    usuario_id = session.get('usuario_id')  # <-- Obtén el usuario de la sesión
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -161,23 +255,19 @@ def transferir_pieza():
             (id_pieza, id_sucursal, total, disponibles, rentadas, daniadas, en_reparacion) 
             VALUES (%s, %s, %s, %s, 0, 0, 0)
         """, (id_pieza, id_sucursal_destino, cantidad, cantidad))
-    # Registrar movimiento de transferencia (opcional, puedes crear un tipo 'transferencia')
+    # Registrar movimiento de transferencia (ahora incluye usuario)
     cursor.execute("""
-        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo, cantidad, descripcion)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_pieza, id_sucursal_origen, 'transferencia_salida', cantidad, f'Transferencia a sucursal {id_sucursal_destino}'))
+        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (id_pieza, id_sucursal_origen, 'transferencia_salida', cantidad, f'Transferencia a sucursal {id_sucursal_destino}', usuario_id))
     cursor.execute("""
-        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo, cantidad, descripcion)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_pieza, id_sucursal_destino, 'transferencia_entrada', cantidad, f'Transferencia desde sucursal {id_sucursal_origen}'))
+        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (id_pieza, id_sucursal_destino, 'transferencia_entrada', cantidad, f'Transferencia desde sucursal {id_sucursal_origen}', usuario_id))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
-
-
-
-
 
 
 ##################################
@@ -226,15 +316,16 @@ def mandar_a_reparacion():
         WHERE id_pieza = %s AND id_sucursal = %s
     """, (cantidad, cantidad, id_pieza, id_sucursal))
     # Registrar movimiento
+
+    usuario_id = session.get('usuario_id')
     cursor.execute("""
-        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo, cantidad, descripcion)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_pieza, id_sucursal, 'a_reparacion', cantidad, 'Enviado a reparación'))
+    INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
+    VALUES (%s, %s, %s, %s, %s, %s)
+                   """, (id_pieza, id_sucursal, 'a_reparacion', cantidad, 'Enviado a reparación', usuario_id))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('inventario.inventario_matriz'))
-
 
 
 
@@ -255,10 +346,11 @@ def regresar_a_disponible():
         WHERE id_pieza = %s AND id_sucursal = %s
     """, (cantidad, cantidad, id_pieza, id_sucursal))
     # Registrar movimiento
+    usuario_id = session.get('usuario_id')
     cursor.execute("""
-        INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo, cantidad, descripcion)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (id_pieza, id_sucursal, 'a_disponible', cantidad, 'Regresado a disponibles'))
+    INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
+    VALUES (%s, %s, %s, %s, %s, %s)
+                   """, (id_pieza, id_sucursal, 'a_disponible', cantidad, 'Regresado a disponibles', usuario_id))
     conn.commit()
     cursor.close()
     conn.close()

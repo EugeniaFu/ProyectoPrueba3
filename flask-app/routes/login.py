@@ -84,6 +84,7 @@ def login():
         return render_template('login/login.html')
     return render_template('login/login.html')
 
+
 @login_bp.route('/recover', methods=['GET', 'POST'])
 def recover():
     if request.method == 'POST':

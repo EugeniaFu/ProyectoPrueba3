@@ -7,6 +7,19 @@
 {% endblock %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
 <div class="box-container">
   <div class="section-header">
     <div>
@@ -32,6 +45,7 @@
     <table class="table table-inventario align-middle">
       <thead>
         <tr>
+          <th>Código</th>
           <th>Pieza</th>
           <th>Categoría</th>
           <th>Total Empresa</th>
@@ -44,6 +58,7 @@
       <tbody>
         {% for pieza in piezas %}
         <tr>
+          <td class="text-muted small">{{ pieza.codigo_pieza }}</td>
           <td>
             <div>{{ pieza.nombre_pieza }}</div>
             {% if pieza.descripcion %}
@@ -167,8 +182,8 @@
 </div>
 
 <!-- Modal Editar Pieza -->
-<div class="modal fade" id="modalEditarPieza{{ pieza.id_pieza }}" tabindex="-1"
-  aria-labelledby="modalEditarPiezaLabel{{ pieza.id_pieza }}" aria-hidden="true">
+<div class="modal fade {% if show_modal_editar_pieza == pieza.id_pieza %}show d-block{% endif %}" id="modalEditarPieza{{ pieza.id_pieza }}" tabindex="-1"
+  aria-labelledby="modalEditarPiezaLabel{{ pieza.id_pieza }}" aria-hidden="true" {% if show_modal_editar_pieza == pieza.id_pieza %}style="background:rgba(0,0,0,0.5);"{% endif %}>
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('inventario.editar_pieza', id_pieza=pieza.id_pieza) }}">
       <div class="modal-content">
@@ -177,17 +192,24 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          {% if error_codigo_editar and show_modal_editar_pieza == pieza.id_pieza %}
+            <div class="alert alert-danger">{{ error_codigo_editar }}</div>
+          {% endif %}
           <div class="mb-2">
             <label class="form-label">Nombre de la pieza</label>
-            <input type="text" class="form-control" name="nombre_pieza" value="{{ pieza.nombre_pieza }}" required>
+            <input type="text" class="form-control" name="nombre_pieza" required value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.nombre_pieza }}{% else %}{{ pieza.nombre_pieza }}{% endif %}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Código</label>
+            <input type="text" class="form-control" name="codigo_pieza" required value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.codigo_pieza }}{% else %}{{ pieza.codigo_pieza }}{% endif %}">
           </div>
           <div class="mb-2">
             <label class="form-label">Categoría</label>
-            <input type="text" class="form-control" name="categoria" value="{{ pieza.categoria }}">
+            <input type="text" class="form-control" name="categoria" value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.categoria }}{% else %}{{ pieza.categoria }}{% endif %}">
           </div>
           <div class="mb-2">
             <label class="form-label">Descripción</label>
-            <textarea class="form-control" name="descripcion" rows="2">{{ pieza.descripcion }}</textarea>
+            <textarea class="form-control" name="descripcion" rows="2">{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.descripcion }}{% else %}{{ pieza.descripcion }}{% endif %}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -198,10 +220,11 @@
     </form>
   </div>
 </div>
+
 {% endfor %}
 
 <!-- Modal Nueva Pieza -->
-<div class="modal fade" id="modalNuevaPieza" tabindex="-1" aria-labelledby="modalNuevaPiezaLabel" aria-hidden="true">
+<div class="modal fade {% if show_modal_nueva_pieza %}show d-block{% endif %}" id="modalNuevaPieza" tabindex="-1" aria-labelledby="modalNuevaPiezaLabel" aria-hidden="true" {% if show_modal_nueva_pieza %}style="background:rgba(0,0,0,0.5);"{% endif %}>
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('inventario.agregar_pieza_general') }}">
       <div class="modal-content">
@@ -210,17 +233,24 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          {% if error_codigo %}
+            <div class="alert alert-danger">{{ error_codigo }}</div>
+          {% endif %}
           <div class="mb-2">
             <label class="form-label">Nombre de la pieza</label>
-            <input type="text" class="form-control" name="nombre_pieza" required>
+            <input type="text" class="form-control" name="nombre_pieza" required value="{{ form_data.nombre_pieza if form_data else '' }}">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Código</label>
+            <input type="text" class="form-control" name="codigo_pieza" required value="{{ form_data.codigo_pieza if form_data else '' }}">
           </div>
           <div class="mb-2">
             <label class="form-label">Categoría</label>
-            <input type="text" class="form-control" name="categoria">
+            <input type="text" class="form-control" name="categoria" value="{{ form_data.categoria if form_data else '' }}">
           </div>
           <div class="mb-2">
             <label class="form-label">Descripción</label>
-            <textarea class="form-control" name="descripcion" rows="2"></textarea>
+            <textarea class="form-control" name="descripcion" rows="2">{{ form_data.descripcion if form_data else '' }}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -231,6 +261,8 @@
     </form>
   </div>
 </div>
+
+
 
 <script>
   function mostrarDescripcion(select, id) {
@@ -249,4 +281,13 @@
     });
   });
 </script>
+
+
+{% if show_modal_nueva_pieza %}
+<script>
+  // Evita que el fondo oscuro se quede fijo si el usuario cierra el modal manualmente
+  document.body.classList.add('modal-open');
+</script>
+{% endif %}
+
 {% endblock %}
