@@ -26,11 +26,11 @@ def inventario_general():
     cursor.execute("SELECT id, nombre FROM sucursales")
     sucursales = cursor.fetchall()
     cursor.execute("""
-        SELECT p.id_pieza, p.nombre_pieza, p.categoria,
+        SELECT p.id_pieza, p.nombre_pieza, p.categoria, p.descripcion,
                SUM(i.total) AS total_empresa
         FROM piezas p
         LEFT JOIN inventario_sucursal i ON p.id_pieza = i.id_pieza
-        GROUP BY p.id_pieza, p.nombre_pieza, p.categoria
+        GROUP BY p.id_pieza, p.nombre_pieza, p.categoria, p.descripcion
     """)
     piezas = cursor.fetchall()
     for pieza in piezas:
@@ -54,13 +54,33 @@ def inventario_general():
 def agregar_pieza_general():
     nombre_pieza = request.form['nombre_pieza']
     categoria = request.form.get('categoria', '')
+    descripcion = request.form.get('descripcion', '')
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO piezas (nombre_pieza, categoria) VALUES (%s, %s)", (nombre_pieza, categoria))
+    cursor.execute("INSERT INTO piezas (nombre_pieza, categoria, descripcion) VALUES (%s, %s, %s)", (nombre_pieza, categoria, descripcion))
     conn.commit()
     cursor.close()
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
+
+
+
+@bp_inventario.route('/editar_pieza/<int:id_pieza>', methods=['POST'])
+@requiere_permiso('modificar_existencias_inventario_general')
+def editar_pieza(id_pieza):
+    nombre_pieza = request.form['nombre_pieza']
+    categoria = request.form.get('categoria', '')
+    descripcion = request.form.get('descripcion', '')
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE piezas SET nombre_pieza=%s, categoria=%s, descripcion=%s WHERE id_pieza=%s",
+                   (nombre_pieza, categoria, descripcion, id_pieza))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    flash('Pieza editada correctamente.', 'success')
+    return redirect(url_for('inventario.inventario_general'))
+
 
 
 
@@ -154,6 +174,10 @@ def transferir_pieza():
     cursor.close()
     conn.close()
     return redirect(url_for('inventario.inventario_general'))
+
+
+
+
 
 
 ##################################
