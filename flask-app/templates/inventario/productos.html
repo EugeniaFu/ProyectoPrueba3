@@ -213,9 +213,9 @@
               <label class="form-label">Pieza asociada</label>
               <select class="form-select" name="pieza_individual">
                 {% for pieza in piezas %}
-                <option value="{{ pieza.id_pieza }}" {% if producto.piezas[0].nombre_pieza==pieza.nombre_pieza
-                  %}selected{% endif %}>
-                  {{ pieza.nombre_pieza }}
+                <option value="{{ pieza.id_pieza }}" title="{{ pieza.descripcion }}" {% if
+                  producto.piezas[0].id_pieza==pieza.id_pieza %}selected{% endif %}>
+                  {{ pieza.nombre_pieza }} - {{ pieza.descripcion }}
                 </option>
                 {% endfor %}
               </select>
@@ -229,8 +229,9 @@
                   <div class="col-7">
                     <select class="form-select" name="pieza_kit[]">
                       {% for p in piezas %}
-                      <option value="{{ p.id_pieza }}" {% if pieza.nombre_pieza==p.nombre_pieza %}selected{% endif %}>
-                        {{ p.nombre_pieza }}
+                      <option value="{{ p.id_pieza }}" title="{{ p.descripcion }}" {% if pieza.id_pieza==p.id_pieza
+                        %}selected{% endif %}>
+                        {{ p.nombre_pieza }} - {{ p.descripcion }}
                       </option>
                       {% endfor %}
                     </select>
@@ -331,7 +332,9 @@
               <label class="form-label">Selecciona la pieza del inventario</label>
               <select class="form-select" name="pieza_individual">
                 {% for pieza in piezas %}
-                <option value="{{ pieza.id_pieza }}">{{ pieza.nombre_pieza }}</option>
+                <option value="{{ pieza.id_pieza }}" title="{{ pieza.descripcion }}">
+                  {{ pieza.nombre_pieza }} - {{ pieza.descripcion }}
+                </option>
                 {% endfor %}
               </select>
             </div>
@@ -342,7 +345,9 @@
                   <div class="col-8">
                     <select class="form-select" name="pieza_kit[]">
                       {% for pieza in piezas %}
-                      <option value="{{ pieza.id_pieza }}">{{ pieza.nombre_pieza }}</option>
+                      <option value="{{ pieza.id_pieza }}" title="{{ pieza.descripcion }}">
+                        {{ pieza.nombre_pieza }} - {{ pieza.descripcion }}
+                      </option>
                       {% endfor %}
                     </select>
                   </div>

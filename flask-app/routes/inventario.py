@@ -185,7 +185,7 @@ def alta_baja_pieza():
     cantidad = int(request.form['cantidad'])
     tipo = request.form['tipo']
     descripcion = request.form.get('descripcion', '') if tipo == 'baja' else None
-    usuario_id = session.get('usuario_id')  # <-- Obtén el usuario de la sesión
+    usuario_id = session.get('user_id')  # <-- Obtén el usuario de la sesión
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -230,7 +230,7 @@ def transferir_pieza():
     id_sucursal_origen = request.form['id_sucursal_origen']
     id_sucursal_destino = request.form['id_sucursal_destino']
     cantidad = int(request.form['cantidad'])
-    usuario_id = session.get('usuario_id')  # <-- Obtén el usuario de la sesión
+    usuario_id = session.get('user_id')  # <-- Obtén el usuario de la sesión
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -317,7 +317,7 @@ def mandar_a_reparacion():
     """, (cantidad, cantidad, id_pieza, id_sucursal))
     # Registrar movimiento
 
-    usuario_id = session.get('usuario_id')
+    usuario_id = session.get('user_id')
     cursor.execute("""
     INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
     VALUES (%s, %s, %s, %s, %s, %s)
@@ -346,7 +346,7 @@ def regresar_a_disponible():
         WHERE id_pieza = %s AND id_sucursal = %s
     """, (cantidad, cantidad, id_pieza, id_sucursal))
     # Registrar movimiento
-    usuario_id = session.get('usuario_id')
+    usuario_id = session.get('user_id')
     cursor.execute("""
     INSERT INTO movimientos_inventario (id_pieza, id_sucursal, tipo_movimiento, cantidad, descripcion, usuario)
     VALUES (%s, %s, %s, %s, %s, %s)

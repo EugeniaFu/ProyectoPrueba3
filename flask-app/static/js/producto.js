@@ -145,3 +145,21 @@ function toggleCamposPrecioEditar(idProducto) {
     });
   }
 }
+
+function mostrarSelectorPiezas() {
+  const tipo = document.getElementById('tipoProducto').value;
+  document.getElementById('piezasIndividual').style.display = tipo === 'individual' ? 'block' : 'none';
+  document.getElementById('piezasKit').style.display = tipo === 'conjunto' ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ...existing code...
+
+  // Cuando se abre el modal de nuevo producto, mostrar el selector correcto
+  const modalNuevo = document.getElementById('modalNuevoProducto');
+  if (modalNuevo) {
+    modalNuevo.addEventListener('show.bs.modal', function () {
+      mostrarSelectorPiezas();
+    });
+  }
+});
