@@ -17,6 +17,18 @@ app = Flask(__name__)
 app.secret_key = 'clave-secreta'
 
 
+@app.template_filter('estado_color')
+def estado_color(estado):
+    colores = {
+        'activa': 'success',
+        'programada': 'primary',
+        'finalizada': 'secondary',
+        'cancelada': 'danger',
+        'renovada': 'info',
+        'parcialmente devuelta': 'warning'
+    }
+    return colores.get(estado, 'dark')
+
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True

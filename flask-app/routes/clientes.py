@@ -19,6 +19,11 @@ def requiere_permiso(nombre_permiso):
     return decorator
 
 
+SUCURSAL_PREFIJOS = {
+    1: "01",  # Matriz
+    2: "02",  # Los Reyes
+    3: "03",  # Lerma
+}
 
 clientes_bp = Blueprint('clientes', __name__, url_prefix='/clientes')
 
@@ -200,18 +205,21 @@ def buscar_clientes():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     query = """
-        SELECT id, nombre, apellido1, apellido2, telefono
-        FROM clientes
-        WHERE activo = 1 AND (
-            nombre LIKE %s OR
-            apellido1 LIKE %s OR
-            apellido2 LIKE %s OR
-            CONCAT(nombre, ' ', apellido1, ' ', apellido2) LIKE %s OR
-            id = %s
-        )
-        LIMIT 10
+    SELECT id, codigo_cliente, nombre, apellido1, apellido2, telefono, correo
+    FROM clientes
+    WHERE activo = 1 AND (
+        codigo_cliente LIKE %s OR
+        nombre LIKE %s OR
+        apellido1 LIKE %s OR
+        apellido2 LIKE %s OR
+        CONCAT(nombre, ' ', apellido1, ' ', apellido2) LIKE %s OR
+        telefono LIKE %s OR
+        correo LIKE %s
+    )
+    LIMIT 10
     """
     like = f"%{term}%"
+    cursor.execute(query, (like, like, like, like, like, like, like))
     try:
         id_int = int(term)
     except:
@@ -241,7 +249,6 @@ def nuevo_cliente():
         fecha_alta = datetime.now().strftime('%Y-%m-%d')
         archivos = request.files.getlist('documentos')
 
-        # Obtén el sucursal_id de la sesión
         sucursal_id = session.get('sucursal_id')
 
         print("Datos recibidos:", nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, "Sucursal:", sucursal_id)
@@ -255,20 +262,44 @@ def nuevo_cliente():
         if not sucursal_id:
             errores.append("No se pudo identificar la sucursal del usuario. Vuelve a iniciar sesión.")
 
+        # Validación de duplicados por teléfono
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM clientes WHERE telefono = %s AND activo = 1", (telefono,))
+        if cursor.fetchone():
+            errores.append("Ya existe un cliente registrado con ese número de teléfono.")
+        # Validación de duplicados por correo (si se proporciona)
+        if correo:
+            cursor.execute("SELECT * FROM clientes WHERE correo = %s AND activo = 1", (correo,))
+            if cursor.fetchone():
+                errores.append("Ya existe un cliente registrado con ese correo.")
+
         if errores:
             print("Errores de validación:", errores)
             for error in errores:
                 flash(error, 'danger')
+            cursor.close()
+            conn.close()
             return render_template('clientes/nuevo_cliente.html')
 
         try:
-            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO clientes (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, sucursal_id, fecha_alta)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, sucursal_id, fecha_alta))
             cliente_id = cursor.lastrowid
+
+            # === BLOQUE PARA GENERAR EL CODIGO_CLIENTE DINAMICO ===
+            prefijo = SUCURSAL_PREFIJOS.get(int(sucursal_id), "00")
+            # Busca el máximo consecutivo ya usado para esa sucursal
+            cursor.execute("SELECT MAX(CAST(SUBSTRING(codigo_cliente, 3, 5) AS UNSIGNED)) FROM clientes WHERE sucursal_id = %s", (sucursal_id,))
+            max_consecutivo = cursor.fetchone()[0] or 0
+            consecutivo = max_consecutivo + 1
+            consecutivo_str = str(consecutivo).zfill(5)
+            codigo_cliente = f"{prefijo}{consecutivo_str}"
+            cursor.execute("UPDATE clientes SET codigo_cliente = %s WHERE id = %s", (codigo_cliente, cliente_id))
+
             upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'clientes')
             os.makedirs(upload_folder, exist_ok=True)
             for idx, archivo in enumerate(archivos):

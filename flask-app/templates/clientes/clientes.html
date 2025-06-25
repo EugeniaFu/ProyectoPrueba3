@@ -56,7 +56,7 @@
             <table class="table table-clientes align-middle">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th>Número de Cliente</th>
                         <th>Nombre</th>
                         <th>Apellidos</th>
                         <th>Teléfono</th>
@@ -69,7 +69,7 @@
                 {% if clientes %}
                     {% for cliente in clientes %}
                     <tr>
-                        <td>{{ cliente.id }}</td>
+                        <td>{{ cliente.codigo_cliente }}</td>
                         <td>
                             <a href="{{ url_for('clientes.detalle_cliente', id=cliente.id) }}" class="fw-bold">
                                 {{ cliente.nombre }}
