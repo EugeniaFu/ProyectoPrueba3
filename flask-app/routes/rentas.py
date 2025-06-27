@@ -4,7 +4,7 @@ from utils.db import get_db_connection
 
 rentas_bp = Blueprint('rentas', __name__, url_prefix='/rentas')
 
-
+# Modulo de Rentas principal
 @rentas_bp.route('/')
 def modulo_rentas():
     conn = get_db_connection()
