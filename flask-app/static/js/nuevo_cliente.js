@@ -88,3 +88,40 @@ document.getElementById('formNuevoCliente').addEventListener('submit', function 
     });
     e.preventDefault();
 });
+
+
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let btnCamara = document.getElementById('btnCamara');
+let btnFoto = document.getElementById('btnFoto');
+let previewFoto = document.getElementById('previewFoto');
+let fotoInput = document.getElementById('foto_documento');
+let stream = null;
+
+btnCamara.onclick = async function() {
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    video.style.display = 'block';
+    btnFoto.style.display = 'inline-block';
+};
+
+btnFoto.onclick = function() {
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    let dataUrl = canvas.toDataURL('image/png');
+    // Crea un archivo a partir del base64
+    fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            let file = new File([blob], "foto_documento.png", { type: "image/png" });
+            archivosSeleccionados.push({ file, tipo: 'otro' }); // Puedes poner 'ine' por default si quieres
+            renderPreview();
+        });
+    previewFoto.src = dataUrl;
+    previewFoto.style.display = 'block';
+    fotoInput.value = dataUrl;
+    video.style.display = 'none';
+    btnFoto.style.display = 'none';
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+};

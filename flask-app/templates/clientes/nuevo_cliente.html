@@ -9,27 +9,28 @@
 {% block content %}
 <div class="container py-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2" role="alert">
-              {{ message }}
-            </div>
-          {% endfor %}
+    {% if messages %}
+    <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2"
+            role="alert">
+            {{ message }}
         </div>
-        <script>
-          setTimeout(function() {
-            document.querySelectorAll('#notificaciones .alert').forEach(function(alert) {
-              alert.classList.remove('show');
-              alert.classList.add('hide');
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('#notificaciones .alert').forEach(function (alert) {
+                alert.classList.remove('show');
+                alert.classList.add('hide');
             });
-          }, 3000);
-          setTimeout(function() {
+        }, 3000);
+        setTimeout(function () {
             var notificaciones = document.getElementById('notificaciones');
             if (notificaciones) notificaciones.remove();
-          }, 3500);
-        </script>
-      {% endif %}
+        }, 3500);
+    </script>
+    {% endif %}
     {% endwith %}
     <a href="{{ url_for('clientes.clientes') }}" class="nuevo-cliente-btn-regresar mb-3">
         <i class="bi bi-arrow-left"></i> Regresar
@@ -86,15 +87,29 @@
                                     <h5>Archivos</h5>
                                     <div class="mb-3">
                                         <label class="form-label">Subir Documentos (al menos uno) *</label>
-                                        <input class="form-control mb-2" type="file" id="documentos" name="documentos" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                        <input class="form-control mb-2" type="file" id="documentos" name="documentos"
+                                            accept=".pdf,.jpg,.jpeg,.png" multiple>
                                         <small class="text-muted">Formatos permitidos: PDF, JPG, PNG.</small>
                                         <div id="previewDocs" class="mt-3"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tomar foto de documento</label><br>
+                                        <video id="video" width="320" height="240" autoplay
+                                            style="display:none;"></video>
+                                        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+                                        <button type="button" id="btnCamara" class="btn btn-secondary mb-2">Activar
+                                            cámara</button>
+                                        <button type="button" id="btnFoto" class="btn btn-primary mb-2"
+                                            style="display:none;">Tomar foto</button>
+                                        <input type="hidden" name="foto_documento" id="foto_documento">
+                                        <img id="previewFoto" src="" style="max-width:100%; display:none;" />
                                     </div>
                                     <div class="alert alert-info">
                                         Sube al menos uno de los siguientes: INE, Licencia, Comprobante de domicilio.
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                         <div class="text-end mt-3">
                             <button type="submit" class="nuevo-cliente-btn-guardar">
