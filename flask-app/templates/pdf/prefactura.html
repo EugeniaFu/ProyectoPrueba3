@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Prefactura</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 14px; }
+    .titulo { text-align: center; font-size: 22px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+    .encabezado td { border: none; }
+  </style>
+</head>
+<body>
+  <div class="titulo">Prefactura</div>
+
+  <table class="encabezado">
+    <tr><td><strong>Renta ID:</strong> {{ renta.id }}</td><td><strong>Fecha:</strong> {{ renta.fecha_registro.strftime('%d/%m/%Y') }}</td></tr>
+    <tr><td colspan="2"><strong>Cliente:</strong> {{ cliente }}</td></tr>
+    <tr><td colspan="2"><strong>Dirección de obra:</strong> {{ renta.direccion_obra }}</td></tr>
+    <tr><td colspan="2"><strong>Observaciones:</strong> {{ renta.observaciones or 'N/A' }}</td></tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Días</th>
+        <th>Costo Unitario</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in detalle %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ item.nombre }}</td>
+          <td>{{ item.cantidad }}</td>
+          <td>{{ item.dias_renta }}</td>
+          <td>${{ '%.2f' % item.costo_unitario }}</td>
+          <td>${{ '%.2f' % item.subtotal }}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="5"><strong>IVA</strong></td>
+        <td>${{ '%.2f' % renta.iva }}</td>
+      </tr>
+      <tr>
+        <td colspan="5"><strong>Total</strong></td>
+        <td>${{ '%.2f' % renta.total_con_iva }}</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

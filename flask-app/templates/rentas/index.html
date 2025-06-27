@@ -3,13 +3,19 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/clientes.css') }}">
 {% endblock %}
 {% block content %}
+<style>
+.no-caret::after {
+  display: none !important;
+}
+
+</style>
 <div class="container-fluid py-4">
   <div class="clientes-box-container">
     <div class="clientes-section-header d-flex justify-content-between align-items-center mb-3">
       <h2 class="clientes-section-title">
       <i class="bi bi-file-earmark-medical"></i>  Módulo de rentas
       </h2>
-      <a href="#" class="btn btn-clientes-main">
+      <a href="#" class="btn btn-clientes-main" data-bs-toggle="modal" data-bs-target="#modalNuevaRenta">
         <i class="bi bi-file-earmark-medical"></i> Nueva Renta
       </a>
     </div>
@@ -36,12 +42,13 @@
           <tr>
             <th>ID</th>
             <th>Kit/Producto</th>
-            <th>Completos</th>
+            <th>Completos/Piezas</th>
             <th>Por piezas</th>
             <th>Fecha de registro</th>
             <th>Fecha de salida</th>
             <th>Fecha de entrada</th>
             <th>Nombre del cliente</th>
+            <th>Dirección de la obra</th>
             <th>Estado de la renta</th>
             <th>Estado de pago</th>
             <th>Metódo de pago</th>
@@ -50,101 +57,295 @@
           </tr>
         </thead>
         <tbody>
-          <!-- Ejemplo de tupla estática -->
-          <tr>
-            <td>1</td>
-            <td>Andamios X2
-                Escaleras X1
-            </td>
-            <td>
-                Si
-            </td>
-            <td>
-                Crucetas X8
-                Coples X4
-                Otro X4
-                Escalera X1
-            </td>
-            <td>20/06/2025:12:00:00</td>
-            <td>20/06/2025</td>
-            <td>20/06/2025</td>
-            <td>Pedro Gonzalez Lara</td>
-            <td><span class="badge bg-secondary">En curso</span></td>
-            <td><span class="badge bg-success">Pagado</span></td>
-            <td>Efectivo</td>
-            <td>2,000.00</td>
-            <td>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="#" class="btn btn-sm btn-light" title="Editar">
-                <i class="bi bi-pencil"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-danger" title="Cancelar">
-                <i class="bi bi-ban"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-dark" title="Generar prefactura">
-                <i class="bi bi-file-earmark-text-fill"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-warning text-white" title="Nota de Salida">
-                <i class="bi bi-arrow-right-circle"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-success" title="Nota de entrada">
-                <i class="bi bi-arrow-left-circle"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-secondary" title="Renovación de renta">
-                <i class="bi bi-arrow-repeat"></i>
-                </a>
-            </div>
-            </td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td>Andamios X2
-                Escaleras X1
-            </td>
-            <td>
-                Si
-            </td>
-            <td>
-                Crucetas X8
-                Coples X4
-                Otro X4
-                Escalera X1
-            </td>
-            <td>20/06/2025:12:00:45</td>
-            <td>23/06/2025</td>
-            <td>28/06/2025</td>
-            <td>Manuel Gomez Uc</td>
-            <td><span class="badge bg-warning">Programado</span></td>
-            <td><span class="badge bg-success">Pagado</span></td>
-            <td>Tarjeta</td>
-            <td>2,000.00</td>
-            <td>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="#" class="btn btn-sm btn-light" title="Editar">
-                <i class="bi bi-pencil"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-danger" title="Cancelar">
-                <i class="bi bi-ban"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-dark" title="Generar prefactura">
-                <i class="bi bi-file-earmark-text-fill"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-warning text-white" title="Nota de Salida">
-                <i class="bi bi-arrow-right-circle"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-success" title="Nota de entrada">
-                <i class="bi bi-arrow-left-circle"></i>
-                </a>
-                <a href="#" class="btn btn-sm btn-outline-secondary" title="Renovación de renta">
-                <i class="bi bi-arrow-repeat"></i>
-                </a>
-            </div>
-            </td>
-          </tr>
+          {% for renta in rentas %}
+            <tr>
+              <td>{{ renta[0] }}</td>
+              <td>
+              {% if productos_por_renta.get(renta[0]) %}
+                {% for item in productos_por_renta[renta[0]] %}
+                  {{ item }}<br>
+                {% endfor %}
+              {% else %}
+                Sin productos
+              {% endif %}
+              </td><!-- Kit/Producto: llenar cuando haya detalle -->
+              <!-- Completos/Piezas -->
+              <td>
+                {% if tipos_por_renta.get(renta[0]) %}
+                  {% for tipo in tipos_por_renta[renta[0]] %}
+                    {{ tipo|capitalize }}<br>
+                  {% endfor %}
+                {% else %}
+                  --
+                {% endif %}
+              </td>
+
+
+              <!-- Por piezas -->
+              <td>
+                {% if piezas_detalle_por_renta.get(renta[0]) %}
+                  {% for pieza in piezas_detalle_por_renta[renta[0]] %}
+                    {{ pieza }}<br>
+                  {% endfor %}
+                {% else %}
+                  --
+                {% endif %}
+              </td>
+              <td>{{ renta[1].strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td>{{ renta[2].strftime('%d/%m/%Y') if renta[2] else '' }}</td>
+              <td>{{ renta[3].strftime('%d/%m/%Y') if renta[3] else 'Indefinido' }}</td>
+              <td> {{ renta[12] }} {{ renta[13] }}</td>
+              <td>{{ renta[11] }}</td>
+              <td>
+                <span class="badge bg-{{ 'secondary' if renta[4] == 'en curso' else 'warning' }}">
+                  {{ renta[4] }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-{{ 'success' if renta[5] == 'pagado' else 'danger' if renta[5] == 'pendiente' else 'warning' }}">
+                  {{ renta[5] }}
+                </span>
+              </td>
+              <td>{{ renta[6] }}</td>
+              <td>${{ '%.2f'|format(renta[7]) }}</td>
+              <td>
+              <div class="d-flex actions justify-content-center gap-2">
+
+                <!-- Botón de Acciones -->
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" 
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Acciones">
+                    <i class="bi bi-three-dots"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-ban me-2"></i>Cancelar</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-repeat me-2"></i>Renovar Renta</a></li>
+                  </ul>
+                </div>
+
+                <!-- Botón de PDF -->
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" 
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Imprimir PDFs">
+                    <i class="bi bi-printer"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Prefactura</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Nota de salida</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada</a></li>
+                  </ul>
+                </div>
+
+                <!-- Botón de Nota -->
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-primary text-white dropdown-toggle no-caret rounded rounded-circle" 
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Registrar Notas">
+                    <i class="bi bi-journal-text"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-right-circle me-2"></i>Nota de Salida</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-left-circle me-2"></i>Nota de Entrada</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="bi bi-journal-check me-2"></i>Prefactura</a></li>
+                  </ul>
+                </div>
+                  <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" 
+                  type="button" title="Eliminar registro">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+              </div>
+              </td>
+            </tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 </div>
+
+
+<!-- Modal Nueva Renta -->
+<div class="modal fade" id="modalNuevaRenta" tabindex="-1" aria-labelledby="modalNuevaRentaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <form method="POST" action="{{ url_for('rentas.crear_renta') }}" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalNuevaRentaLabel">
+          <i class="bi bi-plus-circle"></i> Nueva Renta
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Cliente, dirección y fechas como antes -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-8">
+            <label for="cliente_id" class="form-label">Cliente</label>
+            <select class="form-select" id="cliente_id" name="cliente_id" required>
+              <option value="">Seleccione un cliente...</option>
+              {% for cliente in clientes %}
+                <option value="{{ cliente[0] }}">{{ cliente[1] }} {{ cliente[2] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-12">
+            <label for="direccion_obra" class="form-label">Dirección de obra</label>
+            <textarea class="form-control" id="direccion_obra" name="direccion_obra" rows="2" required></textarea>
+          </div>
+          <div class="col-md-6">
+            <label for="fecha_salida" class="form-label">Fecha de salida</label>
+            <input type="date" class="form-control" id="fecha_salida" name="fecha_salida" required>
+          </div>
+          <div class="col-md-6">
+            <label for="fecha_entrada" class="form-label">Fecha de entrada (opcional)</label>
+            <input type="date" class="form-control" id="fecha_entrada" name="fecha_entrada">
+          </div>
+          <div class="col-md-4">
+            <label for="estado_renta" class="form-label">Estado de la renta</label>
+            <select class="form-select" id="estado_renta" name="estado_renta" required>
+              <option value="en curso">En curso</option>
+              <option value="programada">Programada</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="estado_pago" class="form-label">Estado de pago</label>
+            <select class="form-select" id="estado_pago" name="estado_pago" required>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+              <option value="parcial">Parcial</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="metodo_pago" class="form-label">Método de pago</label>
+            <select class="form-select" id="metodo_pago" name="metodo_pago">
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="sin pago">Sin pago</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label for="observaciones" class="form-label">Observaciones</label>
+            <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
+          </div>
+        </div>
+
+        <!-- Productos -->
+        <h5>Productos a rentar</h5>
+        <table class="table table-bordered" id="tabla-productos">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Días de renta</th>
+              <th>Costo unitario</th>
+              <th>Subtotal</th>
+              <th><button type="button" class="btn btn-sm btn-success" id="btn-agregar-producto">+</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <select class="form-select tipo-producto" name="tipo_producto[]" required>
+                  <option value="pieza">Por pieza</option>
+                  <option value="kit">Completo</option>
+                </select>
+              </td>
+              <td>
+                <select class="form-select producto-select" name="producto_id[]" required>
+                  <option value="">Seleccione producto...</option>
+                  {% for producto in productos %}
+                    <option value="{{ producto[0] }}" data-tipo="kit">{{ producto[1] }}</option>
+                  {% endfor %}
+                  {% for pieza in piezas %}
+                    <option value="{{ pieza[0] }}" data-tipo="pieza">{{ pieza[1] }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input type="number" name="cantidad[]" class="form-control cantidad" min="1" value="1" required></td>
+              <td><input type="number" name="dias_renta[]" class="form-control dias" min="1" value="1" required></td>
+              <td><input type="number" name="costo_unitario[]" class="form-control costo" step="0.01" min="0" value="0" required></td>
+              <td><input type="number" class="form-control subtotal" step="0.01" min="0" readonly></td>
+              <td><button type="button" class="btn btn-sm btn-danger btn-eliminar-producto">x</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check2-circle"></i> Guardar Renta
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabla = document.getElementById('tabla-productos').getElementsByTagName('tbody')[0];
+    const btnAgregar = document.getElementById('btn-agregar-producto');
+
+    // Función para recalcular subtotal por fila
+    function recalcularSubtotal(fila) {
+      const cantidad = parseFloat(fila.querySelector('.cantidad').value) || 0;
+      const dias = parseFloat(fila.querySelector('.dias').value) || 0;
+      const costo = parseFloat(fila.querySelector('.costo').value) || 0;
+      const subtotalInput = fila.querySelector('.subtotal');
+      subtotalInput.value = (cantidad * dias * costo).toFixed(2);
+    }
+
+    // Recalcular subtotales al cambiar inputs
+    tabla.addEventListener('input', (e) => {
+      if(e.target.classList.contains('cantidad') || e.target.classList.contains('dias') || e.target.classList.contains('costo')){
+        recalcularSubtotal(e.target.closest('tr'));
+      }
+    });
+
+    // Agregar nueva fila producto
+    btnAgregar.addEventListener('click', () => {
+      const filaNueva = tabla.rows[0].cloneNode(true);
+
+      filaNueva.querySelectorAll('select, input').forEach(input => {
+        if(input.tagName === 'SELECT'){
+          input.selectedIndex = 0;
+        } else {
+          input.value = input.classList.contains('subtotal') ? '' : '1';
+        }
+      });
+
+      tabla.appendChild(filaNueva);
+    });
+
+    // Eliminar fila producto
+    tabla.addEventListener('click', (e) => {
+      if(e.target.classList.contains('btn-eliminar-producto')){
+        if(tabla.rows.length > 1){
+          e.target.closest('tr').remove();
+        }
+      }
+    });
+  });
+
+  tabla.addEventListener('change', (e) => {
+  if (e.target.classList.contains('tipo-producto')) {
+    const fila = e.target.closest('tr');
+    const tipoSeleccionado = e.target.value;
+    const selectProducto = fila.querySelector('.producto-select');
+
+    // Mostrar solo las opciones con data-tipo correspondiente
+    [...selectProducto.options].forEach(op => {
+      if (!op.value) {
+        op.hidden = false;
+      } else {
+        op.hidden = op.getAttribute('data-tipo') !== tipoSeleccionado;
+      }
+    });
+
+    selectProducto.selectedIndex = 0; // Resetear selección
+  }
+});
+</script>
 
 {% endblock content %}
