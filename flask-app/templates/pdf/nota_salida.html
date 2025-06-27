@@ -1,0 +1,43 @@
+<!-- templates/pdf/nota_salida.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Nota de Salida</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 14px; }
+    .titulo { text-align: center; font-size: 20px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+    .encabezado td { border: none; }
+  </style>
+</head>
+<body>
+  <div class="titulo">Nota de Salida</div>
+
+  <table class="encabezado">
+    <tr><td><strong>Renta ID:</strong> {{ nota.renta_id }}</td><td><strong>Fecha:</strong> {{ nota.fecha_emision.strftime('%d/%m/%Y') }}</td></tr>
+    <tr><td colspan="2"><strong>Dirección de obra:</strong> {{ nota.direccion_obra }}</td></tr>
+    <tr><td colspan="2"><strong>Observaciones:</strong> {{ nota.observaciones or 'N/A' }}</td></tr>
+  </table>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nombre de Pieza</th>
+        <th>Cantidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in detalle %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ item.nombre }}</td>
+          <td>{{ item.cantidad }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

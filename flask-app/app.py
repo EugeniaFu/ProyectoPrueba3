@@ -10,6 +10,9 @@ from routes.producto import bp_producto
 from routes.empleados import empleados_bp
 from routes.usuarios import usuarios_bp
 
+from routes.rentas import rentas_bp
+from routes.nota_entrada import notas_entrada_bp
+
 
 
 app = Flask(__name__)
@@ -45,6 +48,10 @@ app.register_blueprint(bp_inventario)
 app.register_blueprint(bp_producto)
 app.register_blueprint(empleados_bp)
 app.register_blueprint(usuarios_bp)
+
+app.register_blueprint(rentas_bp)
+app.register_blueprint(notas_entrada_bp)
+
 
 
 
