@@ -16,6 +16,8 @@ def requiere_permiso(nombre_permiso):
 
 bp_producto = Blueprint('producto', __name__, url_prefix='/producto')
 
+
+
 # Mostrar productos
 @bp_producto.route('/productos')
 @requiere_permiso('ver_productos')
@@ -33,12 +35,13 @@ def productos():
     # Traer piezas asociadas a cada producto
     for producto in productos:
         cursor.execute("""
-            SELECT pp.cantidad, pi.nombre_pieza
-            FROM producto_piezas pp
-            JOIN piezas pi ON pp.id_pieza = pi.id_pieza
-            WHERE pp.id_producto = %s
-        """, (producto['id_producto'],))
+                       SELECT pp.id_pieza, pp.cantidad, pi.nombre_pieza, pi.descripcion
+                       FROM producto_piezas pp
+                       JOIN piezas pi ON pp.id_pieza = pi.id_pieza
+                       WHERE pp.id_producto = %s
+                       """, (producto['id_producto'],))
         producto['piezas'] = cursor.fetchall()
+
     # Traer piezas para el modal de alta/edición
     cursor.execute("SELECT * FROM piezas")
     piezas = cursor.fetchall()
@@ -93,6 +96,9 @@ def crear_producto():
     conn.close()
     flash('Producto guardado correctamente.', 'success')
     return redirect(url_for('producto.productos'))
+
+
+
 
 # Editar producto
 @bp_producto.route('/editar/<int:id_producto>', methods=['POST'])

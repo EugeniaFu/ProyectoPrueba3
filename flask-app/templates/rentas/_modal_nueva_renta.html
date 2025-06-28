@@ -1,0 +1,133 @@
+<div class="modal fade" id="modalNuevaRenta" tabindex="-1" aria-labelledby="modalNuevaRentaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <form method="POST" action="{{ url_for('rentas.crear_renta') }}" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNuevaRentaLabel">
+                    <i class="bi bi-plus-circle"></i> Nueva Renta
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Columna Izquierda -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="cliente_id" class="form-label">Cliente</label>
+                            <select class="form-select" id="cliente_id" name="cliente_id" required>
+                                <option value="">Selecciona un cliente</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente[0] }}">{{ cliente[1] }} {{ cliente[2] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sucursal</label>
+                            <input type="text" class="form-control" value="{{ sucursal_nombre or 'No disponible' }}"
+                                readonly>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="fecha_salida" class="form-label">Fecha inicio</label>
+                                <input type="date" class="form-control" id="fecha_salida" name="fecha_salida" required>
+                            </div>
+                            <div class="col">
+                                <label for="fecha_entrada" class="form-label">Fecha fin (opcional)</label>
+                                <input type="date" class="form-control" id="fecha_entrada" name="fecha_entrada">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">¿Renta programada?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="renta_programada"
+                                    name="renta_programada">
+                                <label class="form-check-label" for="renta_programada">
+                                    Sí, programar para otra fecha
+                                </label>
+                            </div>
+                            <div id="fecha_programada_group" class="mt-2" style="display:none;">
+                                <label for="fecha_programada" class="form-label">Fecha programada</label>
+                                <input type="date" class="form-control" id="fecha_programada" name="fecha_programada">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">¿Traslado?</label>
+                            <select class="form-select" id="traslado" name="traslado">
+                                <option value="ninguno">Ninguno</option>
+                                <option value="medio">Medio</option>
+                                <option value="redondo">Redondo</option>
+                            </select>
+                            <div id="costo_traslado_group" class="mt-2" style="display:none;">
+                                <label for="costo_traslado" class="form-label">Costo de traslado</label>
+                                <input type="number" class="form-control" id="costo_traslado" name="costo_traslado"
+                                    min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="direccion_obra" class="form-label">Dirección de obra</label>
+                            <textarea class="form-control" id="direccion_obra" name="direccion_obra" rows="2"
+                                required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <!-- Columna Derecha -->
+                    <div class="col-md-6">
+                        <label class="form-label">Productos a rentar</label>
+                        <div class="d-flex mb-2 gap-2">
+                            <select class="form-select" id="producto_select">
+                                <option value="">Selecciona un producto</option>
+                                {% for producto in productos %}
+                                <option value="{{ producto[0] }}">{{ producto[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" class="form-control" id="cantidad_producto" placeholder="Cantidad"
+                                min="1" value="1">
+                            <button type="button" class="btn btn-success" id="agregar_producto"><i
+                                    class="bi bi-plus"></i></button>
+                        </div>
+                        <table class="table table-bordered" id="tabla-productos">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Días</th>
+                                    <th>Costo unitario</th>
+                                    <th>Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Filas agregadas dinámicamente -->
+                            </tbody>
+                        </table>
+                        <div class="mt-3">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Subtotal</td>
+                                    <td id="subtotal_general">$0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Traslado <span id="tipo_traslado_label" class="text-muted"></span></td>
+                                    <td id="traslado_general">$0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>+IVA (16%)</td>
+                                    <td id="iva_general">$0.00</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td id="total_general"><strong>$0.00</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check2-circle"></i> Guardar Renta
+                </button>
+                <button type="button"
+

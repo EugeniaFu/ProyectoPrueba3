@@ -1,10 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from datetime import datetime
 from utils.db import get_db_connection
 
 rentas_bp = Blueprint('rentas', __name__, url_prefix='/rentas')
 
-# Modulo de Rentas principal
 @rentas_bp.route('/')
 def modulo_rentas():
     conn = get_db_connection()
@@ -24,63 +23,67 @@ def modulo_rentas():
     """)
     rentas = cursor.fetchall()
 
-    # Detalles por renta: nombre producto, cantidad, tipo, id_producto
+    # Detalles por renta
     cursor.execute("""
-        SELECT d.renta_id, p.nombre, d.cantidad, d.tipo_producto, d.id_producto
+        SELECT d.renta_id, p.nombre, d.cantidad, d.id_producto, p.tipo
         FROM renta_detalle d
         JOIN productos p ON d.id_producto = p.id_producto
     """)
     detalles = cursor.fetchall()
 
-    # Traer piezas por producto (solo kits las usarán)
-    cursor.execute("""
-        SELECT pp.id_producto, pi.nombre_pieza, pp.cantidad
-        FROM producto_piezas pp
-        JOIN piezas pi ON pp.id_pieza = pi.id_pieza
-    """)
-    piezas_raw = cursor.fetchall()
-
-    # Agrupar piezas por producto
-    piezas_por_producto = {}
-    for id_producto, nombre_pieza, cantidad in piezas_raw:
-        piezas_por_producto.setdefault(id_producto, []).append(f"{nombre_pieza} x{cantidad}")
-
-    # Agrupar datos por renta
+    # Agrupar productos por renta
     productos_por_renta = {}
-    tipos_por_renta = {}
-    piezas_detalle_por_renta = {}
-
-    for renta_id, nombre, cantidad, tipo, id_producto in detalles:
+    for renta_id, nombre, cantidad, id_producto, tipo in detalles:
         productos_por_renta.setdefault(renta_id, []).append(f"{nombre} x{cantidad}")
-        tipos_por_renta.setdefault(renta_id, []).append(tipo)
-
-        # Si es kit, agrega las piezas desglosadas
-        if tipo == 'kit' and id_producto in piezas_por_producto:
-            piezas_detalle_por_renta.setdefault(renta_id, []).extend(piezas_por_producto[id_producto])
 
     # Clientes activos
     cursor.execute("SELECT id, nombre, apellido1 FROM clientes WHERE activo = 1")
     clientes = cursor.fetchall()
 
-    # Productos disponibles
-    cursor.execute("SELECT id_producto, nombre FROM productos ORDER BY nombre")
+    # Productos y precios (JOIN con producto_precios)
+    cursor.execute("""
+        SELECT p.id_producto, p.nombre, 
+               pp.precio_dia, pp.precio_7dias, pp.precio_15dias, pp.precio_30dias, pp.precio_31mas, p.precio_unico
+        FROM productos p
+        JOIN producto_precios pp ON p.id_producto = pp.id_producto
+        WHERE p.estatus = 'activo'
+        ORDER BY p.nombre
+    """)
     productos = cursor.fetchall()
 
-    # Obtener piezas individuales
-    cursor.execute("SELECT id_pieza, nombre_pieza FROM piezas ORDER BY nombre_pieza")
-    piezas = cursor.fetchall()
+    # Prepara los precios para JS
+    precios_productos = {}
+    for prod in productos:
+        precios_productos[prod[0]] = {
+            "precio_dia": float(prod[2]),
+            "precio_7dias": float(prod[3]),
+            "precio_15dias": float(prod[4]),
+            "precio_30dias": float(prod[5]),
+            "precio_31mas": float(prod[6]),
+            "precio_unico": int(prod[7])
+        }
+
+    # Sucursal actual
+    sucursal_id = session.get('sucursal_id')
+    sucursal_nombre = None
+    if sucursal_id:
+        cursor.execute("SELECT nombre FROM sucursales WHERE id = %s", (sucursal_id,))
+        row = cursor.fetchone()
+        if row:
+            sucursal_nombre = row[0]
 
     cursor.close()
     conn.close()
 
-    return render_template('rentas/index.html', 
-                           rentas=rentas, 
-                           clientes=clientes, 
-                           productos_por_renta=productos_por_renta, 
-                           piezas=piezas,
-                           productos=productos,
-                           tipos_por_renta=tipos_por_renta,
-                           piezas_detalle_por_renta=piezas_detalle_por_renta)
+    return render_template(
+        'rentas/index.html',
+        rentas=rentas,
+        clientes=clientes,
+        productos=productos,
+        productos_por_renta=productos_por_renta,
+        sucursal_nombre=sucursal_nombre,
+        precios_productos=precios_productos
+    )
 
 @rentas_bp.route('/crear', methods=['POST'])
 def crear_renta():
@@ -88,64 +91,71 @@ def crear_renta():
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        if request.form.get('renta_programada'):
+            estado_renta = 'programada'
+        else:
+            estado_renta = 'en curso'
+        estado_pago = 'Pago pendiente'
+        metodo_pago = 'Pendiente'
         cliente_id = request.form['cliente_id']
         direccion_obra = request.form['direccion_obra']
         fecha_salida = request.form['fecha_salida']
         fecha_entrada = request.form.get('fecha_entrada') or None
-        estado_renta = request.form['estado_renta']
-        estado_pago = request.form['estado_pago']
-        metodo_pago = request.form.get('metodo_pago')
         observaciones = request.form.get('observaciones')
         fecha_registro = datetime.now()
+        fecha_programada = request.form.get('fecha_programada') or None
+        costo_traslado = float(request.form.get('costo_traslado') or 0)
+        sucursal_id = session.get('sucursal_id')
 
-        # Insertar la renta (sin tipo_producto)
         cursor.execute("""
             INSERT INTO rentas (
                 cliente_id, fecha_registro, fecha_salida, fecha_entrada,
                 direccion_obra, estado_renta, estado_pago, metodo_pago,
-                total, iva, total_con_iva, observaciones
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                total, iva, total_con_iva, observaciones, fecha_programada, sucursal_id, costo_traslado
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             cliente_id, fecha_registro, fecha_salida, fecha_entrada,
             direccion_obra, estado_renta, estado_pago, metodo_pago,
-            0, 0, 0, observaciones
+            0, 0, 0, observaciones, fecha_programada, sucursal_id, costo_traslado
         ))
 
         renta_id = cursor.lastrowid
 
-        # Obtener productos enviados desde el formulario
         productos = request.form.getlist('producto_id[]')
         cantidades = request.form.getlist('cantidad[]')
         dias = request.form.getlist('dias_renta[]')
         costos = request.form.getlist('costo_unitario[]')
-        tipos = request.form.getlist('tipo_producto[]')  # <-- aquí está el tipo
 
         total = 0
 
         for i in range(len(productos)):
             prod_id = int(productos[i])
             cant = int(cantidades[i])
-            dias_renta = int(dias[i])
-            costo_unitario = float(costos[i])
-            tipo_producto = tipos[i]  # <-- 'pieza' o 'kit'
-            subtotal = cant * dias_renta * costo_unitario
-            total += subtotal
+            dias_renta_raw = dias[i]
+            if dias_renta_raw in (None, '', 'null'):
+                dias_renta = None  # o 0 si tu base no acepta NULL
+                subtotal = 0
+            else:
+                dias_renta = int(dias_renta_raw)
+                costo_unitario = float(costos[i])
+                subtotal = cant * dias_renta * costo_unitario
+                total += subtotal
 
             cursor.execute("""
                 INSERT INTO renta_detalle (
                     renta_id, id_producto, cantidad, dias_renta,
-                    costo_unitario, subtotal, tipo_producto
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    costo_unitario, subtotal
+                ) VALUES (%s, %s, %s, %s, %s, %s)
             """, (
                 renta_id, prod_id, cant, dias_renta,
-                costo_unitario, subtotal, tipo_producto
+                float(costos[i]), subtotal
             ))
 
         # Calcular IVA y total con IVA
+        total += costo_traslado
         iva = total * 0.16
         total_con_iva = total + iva
 
-        # Actualizar la renta con totales
         cursor.execute("""
             UPDATE rentas SET total=%s, iva=%s, total_con_iva=%s WHERE id=%s
         """, (total, iva, total_con_iva, renta_id))
@@ -155,6 +165,75 @@ def crear_renta():
     except Exception as e:
         conn.rollback()
         flash(f"Error al guardar la renta: {e}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+
+    return redirect(url_for('rentas.modulo_rentas'))
+
+# Ejemplo de endpoint para cerrar renta y actualizar días/subtotales
+@rentas_bp.route('/cerrar/<int:renta_id>', methods=['POST'])
+def cerrar_renta(renta_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        fecha_entrada = request.form.get('fecha_entrada')
+        if not fecha_entrada:
+            flash("Debes ingresar la fecha de entrada para cerrar la renta.", "danger")
+            return redirect(url_for('rentas.modulo_rentas'))
+
+        # Obtener fecha_salida de la renta
+        cursor.execute("SELECT fecha_salida FROM rentas WHERE id = %s", (renta_id,))
+        row = cursor.fetchone()
+        if not row:
+            flash("Renta no encontrada.", "danger")
+            return redirect(url_for('rentas.modulo_rentas'))
+        fecha_salida = row[0]
+
+        # Calcular días de renta
+        dias_renta = (datetime.strptime(fecha_entrada, "%Y-%m-%d") - datetime.strptime(str(fecha_salida), "%Y-%m-%d")).days + 1
+        if dias_renta < 1:
+            dias_renta = 1
+
+        # Actualizar cada detalle de la renta
+        cursor.execute("""
+            SELECT id, cantidad, costo_unitario FROM renta_detalle WHERE renta_id = %s
+        """, (renta_id,))
+        detalles = cursor.fetchall()
+        for detalle in detalles:
+            detalle_id, cantidad, costo_unitario = detalle
+            subtotal = cantidad * dias_renta * costo_unitario
+            cursor.execute("""
+                UPDATE renta_detalle
+                SET dias_renta = %s, subtotal = %s
+                WHERE id = %s
+            """, (dias_renta, subtotal, detalle_id))
+
+        # Recalcular totales
+        cursor.execute("""
+            SELECT SUM(subtotal) FROM renta_detalle WHERE renta_id = %s
+        """, (renta_id,))
+        total = cursor.fetchone()[0] or 0
+
+        # Obtener costo_traslado
+        cursor.execute("SELECT costo_traslado FROM rentas WHERE id = %s", (renta_id,))
+        costo_traslado = cursor.fetchone()[0] or 0
+
+        total += costo_traslado
+        iva = total * 0.16
+        total_con_iva = total + iva
+
+        cursor.execute("""
+            UPDATE rentas SET fecha_entrada=%s, total=%s, iva=%s, total_con_iva=%s, estado_renta='cerrada'
+            WHERE id=%s
+        """, (fecha_entrada, total, iva, total_con_iva, renta_id))
+
+        conn.commit()
+        flash("Renta cerrada y actualizada con éxito.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Error al cerrar la renta: {e}", "danger")
     finally:
         cursor.close()
         conn.close()

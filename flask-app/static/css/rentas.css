@@ -1,0 +1,207 @@
+/* --- CONTENEDOR PRINCIPAL RENTAS --- */
+.rentas-box-container {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 2px 14px rgba(35, 57, 93, 0.10);
+    padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+    margin-bottom: 2rem;
+    margin-top: 1.2rem;
+}
+
+.rentas-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.rentas-section-title {
+    color: #23395d;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin-bottom: 0;
+}
+
+.btn-rentas-main {
+    background: #c62828;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 10px;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    border: none;
+    transition: background 0.2s;
+}
+.btn-rentas-main:hover {
+    background: #a31515;
+    color: #fff;
+}
+
+.btn-rentas-filter {
+    background: #f5f5f5;
+    color: #23395d;
+    border: 1px solid #b0b0b0;
+    border-radius: 8px;
+    margin-right: 0.5rem;
+    font-weight: 500;
+    padding: 0.35rem 1rem;
+    font-size: 0.98rem;
+}
+.btn-rentas-filter.active, .btn-rentas-filter:hover {
+    background: #23395d;
+    color: #fff;
+}
+
+.search-rentas-box {
+    border-radius: 10px;
+    border: 1.5px solid #b0b0b0;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    max-width: 300px;
+    font-size: 1rem;
+}
+
+/* --- TABLA DE RENTAS --- */
+.table-rentas {
+    border: 2.5px solid #23395d;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(35,57,93,0.07);
+    background: #fff;
+    font-size: 0.97rem;
+}
+.table-rentas th {
+    background: #23395d;
+    color: #fff;
+    font-weight: bold;
+    border-top: none;
+    font-size: 1.01rem;
+    padding: 0.55em 0.4em;
+    text-align: center;
+}
+.table-rentas td {
+    vertical-align: middle;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.97rem;
+    padding: 0.45em 0.4em;
+    text-align: center;
+    background: #f8fafc;
+    color: #23395d;
+}
+.table-rentas tr:nth-child(even) td {
+    background: #f1f4fa;
+}
+.table-rentas tr:hover td {
+    background: #e3eafc;
+}
+.table-rentas th:first-child {
+    border-top-left-radius: 14px;
+}
+.table-rentas th:last-child {
+    border-top-right-radius: 14px;
+}
+.table-rentas tr:last-child td:first-child {
+    border-bottom-left-radius: 14px;
+}
+.table-rentas tr:last-child td:last-child {
+    border-bottom-right-radius: 14px;
+}
+
+/* Badges */
+.badge-rentas {
+    font-size: 0.95em;
+    padding: 0.3em 0.8em;
+    border-radius: 8px;
+}
+.badge-rentas.bg-danger {
+    background: #c62828 !important;
+    color: #fff !important;
+}
+.badge-rentas.bg-success {
+    background: #2e7d32 !important;
+    color: #fff !important;
+}
+.badge-rentas.bg-warning {
+    background: #fbc02d !important;
+    color: #23395d !important;
+}
+.badge-rentas.bg-secondary {
+    background: #b0b0b0 !important;
+    color: #23395d !important;
+}
+
+/* Acciones */
+.actions .btn {
+    border-radius: 50%;
+    padding: 0.3em 0.6em;
+    font-size: 1em;
+    margin-right: 2px;
+    transition: background 0.2s, color 0.2s;
+}
+
+/* Dropdowns */
+.dropdown-menu {
+    font-size: 0.97rem;
+    border-radius: 10px;
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 16px;
+    border: 2px solid #23395d;
+}
+.modal-header {
+    border-bottom: 1.5px solid #e0e0e0;
+}
+.modal-title {
+    color: #23395d;
+    font-weight: bold;
+}
+.btn-close:focus {
+    box-shadow: 0 0 0 0.15rem #3363af33;
+}
+
+/* Inputs y selects en modal */
+.form-label {
+    color: #23395d;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+}
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1.2px solid #b0b0b0;
+    font-size: 0.97em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #3363af;
+    box-shadow: 0 0 0 0.12rem #3363af33;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .rentas-box-container {
+        padding: 1rem 0.5rem;
+    }
+    .rentas-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .rentas-section-title {
+        font-size: 1.15rem;
+    }
+    .table-responsive {
+        border-radius: 10px;
+        overflow-x: auto;
+    }
+    .btn-rentas-main, .btn-rentas-filter {
+        width: 100%;
+        margin-top: 0.5em;
+    }
+    .table-rentas th, .table-rentas td {
+        font-size: 0.93rem;
+        padding: 0.35em 0.2em;
+    }
+}

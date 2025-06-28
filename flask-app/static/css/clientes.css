@@ -252,3 +252,27 @@
         min-height: unset;
     }
 }
+
+/* Contorno azul y esquinas redondeadas para la tabla de clientes */
+.table-clientes {
+    border: 2.5px solid #23395d;
+    border-radius: 18px;
+    overflow: hidden; /* Para que las esquinas de los hijos también se redondeen */
+    box-shadow: 0 2px 10px rgba(35,57,93,0.07);
+}
+
+/* Redondear solo las esquinas superiores del encabezado */
+.table-clientes th:first-child {
+    border-top-left-radius: 16px;
+}
+.table-clientes th:last-child {
+    border-top-right-radius: 16px;
+}
+
+/* Redondear solo las esquinas inferiores del último td */
+.table-clientes tr:last-child td:first-child {
+    border-bottom-left-radius: 16px;
+}
+.table-clientes tr:last-child td:last-child {
+    border-bottom-right-radius: 16px;
+}
