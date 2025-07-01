@@ -113,18 +113,21 @@ def crear_renta():
         fecha_registro = datetime.now()
         fecha_programada = request.form.get('fecha_programada') or None
         costo_traslado = float(request.form.get('costo_traslado') or 0)
+        traslado = request.form.get('traslado') or 'ninguno'  # <-- Nuevo: obtiene el tipo de traslado
         sucursal_id = session.get('sucursal_id')
 
         cursor.execute("""
             INSERT INTO rentas (
                 cliente_id, fecha_registro, fecha_salida, fecha_entrada,
                 direccion_obra, estado_renta, estado_pago, metodo_pago,
-                total, iva, total_con_iva, observaciones, fecha_programada, sucursal_id, costo_traslado
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                total, iva, total_con_iva, observaciones, fecha_programada, sucursal_id,
+                costo_traslado, traslado  -- <-- Nuevo campo aquí
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             cliente_id, fecha_registro, fecha_salida, fecha_entrada,
             direccion_obra, estado_renta, estado_pago, metodo_pago,
-            0, 0, 0, observaciones, fecha_programada, sucursal_id, costo_traslado
+            0, 0, 0, observaciones, fecha_programada, sucursal_id,
+            costo_traslado, traslado  # <-- Nuevo valor aquí
         ))
 
         renta_id = cursor.lastrowid
@@ -141,7 +144,7 @@ def crear_renta():
             cant = int(cantidades[i])
             dias_renta_raw = dias[i]
             if dias_renta_raw in (None, '', 'null'):
-                dias_renta = None  # o 0 si tu base no acepta NULL
+                dias_renta = None
                 subtotal = 0
             else:
                 dias_renta = int(dias_renta_raw)
@@ -178,6 +181,9 @@ def crear_renta():
         conn.close()
 
     return redirect(url_for('rentas.modulo_rentas'))
+
+
+
 
 # Ejemplo de endpoint para cerrar renta y actualizar días/subtotales
 @rentas_bp.route('/cerrar/<int:renta_id>', methods=['POST'])
@@ -249,150 +255,3 @@ def cerrar_renta(renta_id):
     return redirect(url_for('rentas.modulo_rentas'))
 
 
-
-
-
-################################3
-#################################
-###################################
-
-
-
-
-@rentas_bp.route('/prefactura/<int:renta_id>')
-def obtener_prefactura(renta_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    # Detalle de productos
-    cursor.execute("""
-        SELECT p.nombre, d.cantidad, d.dias_renta, d.costo_unitario, d.subtotal
-        FROM renta_detalle d
-        JOIN productos p ON d.id_producto = p.id_producto
-        WHERE d.renta_id = %s
-    """, (renta_id,))
-    detalle = cursor.fetchall()
-    # Totales
-    cursor.execute("""
-        SELECT total_con_iva FROM rentas WHERE id = %s
-    """, (renta_id,))
-    total = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return jsonify({
-        "detalle": detalle,
-        "total_con_iva": total['total_con_iva'] if total else 0
-    })
-
-
-
-
-
-
-@rentas_bp.route('/prefactura/pago/<int:renta_id>', methods=['POST'])
-def registrar_pago_prefactura(renta_id):
-    import pytz
-    import json
-    from PyPDF2 import PdfReader, PdfWriter
-    from reportlab.pdfgen import canvas
-    from io import BytesIO
-    import os
-
-    data = request.get_json()
-    tipo = data.get('tipo', 'inicial')
-    metodo = data.get('metodo_pago')
-    monto = data.get('monto')
-    monto_recibido = data.get('monto_recibido')
-    cambio = data.get('cambio')
-    numero_seguimiento = data.get('numero_seguimiento')
-    zona_horaria = str(datetime.now().astimezone().tzinfo)
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Insertar prefactura
-        cursor.execute("""
-            INSERT INTO prefacturas (
-                renta_id, tipo, pagada, metodo_pago, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, generada
-            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s, 1)
-        """, (
-            renta_id, tipo, metodo, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria
-        ))
-
-        # Actualizar renta
-        cursor.execute("""
-            UPDATE rentas SET estado_pago='Pago realizado', metodo_pago=%s WHERE id=%s
-        """, (metodo, renta_id))
-        conn.commit()
-
-        # --- GENERAR PDF DE PREFACTURA ---
-        # 1. Obtener datos de la renta y cliente
-        cursor.execute("""
-            SELECT r.fecha_registro, r.fecha_salida, r.fecha_entrada, r.direccion_obra, r.total_con_iva, r.total, r.iva, 
-                   c.nombre, c.apellido1, c.apellido2, c.celular
-            FROM rentas r
-            JOIN clientes c ON r.cliente_id = c.id
-            WHERE r.id = %s
-        """, (renta_id,))
-        renta = cursor.fetchone()
-
-        cursor.execute("""
-            SELECT p.nombre, d.cantidad, d.dias_renta, d.costo_unitario, d.subtotal
-            FROM renta_detalle d
-            JOIN productos p ON d.id_producto = p.id_producto
-            WHERE d.renta_id = %s
-        """, (renta_id,))
-        detalle = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        # 2. Crear PDF de datos en memoria
-        packet = BytesIO()
-        can = canvas.Canvas(packet, pagesize=(396, 612))  # Media carta en puntos
-
-        # Ejemplo de posiciones (ajusta según tu plantilla)
-        can.setFont("Helvetica-Bold", 10)
-        can.drawString(70, 540, f"{renta[7]} {renta[8]} {renta[9]}")  # Nombre
-        can.setFont("Helvetica", 10)
-        can.drawString(70, 525, f"{renta[10]}")  # Celular
-        can.drawString(70, 510, f"{metodo}")    # Forma de pago
-        can.drawString(70, 495, f"{renta[1]} a {renta[2]}")  # Periodo de renta
-        can.drawString(300, 540, f"{renta[0]}")  # Fecha (ajusta según tu plantilla)
-        can.drawString(300, 525, f"{renta_id}")  # Folio de salida
-        can.drawString(300, 510, f"{renta[3]}")  # Obra
-
-        # Tabla de productos (ajusta posiciones y formato)
-        y = 470
-        for item in detalle:
-            can.drawString(55, y, str(item[0]))  # Descripción
-            can.drawString(180, y, str(item[1])) # Cantidad
-            can.drawString(210, y, str(item[2])) # Días
-            can.drawString(250, y, f"${item[3]:.2f}") # Costo
-            can.drawString(300, y, f"${item[4]:.2f}") # Subtotal
-            y -= 15
-
-        # Totales
-        can.drawString(300, 120, f"${renta[5]:.2f}")  # Subtotal
-        can.drawString(300, 105, f"${renta[6]:.2f}")  # IVA
-        can.drawString(300, 90, f"${renta[4]:.2f}")   # Total
-
-        can.save()
-        packet.seek(0)
-
-        # 3. Leer plantilla y superponer datos
-        plantilla_path = os.path.join('static', 'notas', 'plantilla_prefactura.pdf')
-        pdf_path = os.path.join('static', 'notas', f'prefactura_{renta_id}.pdf')
-        plantilla = PdfReader(open(plantilla_path, "rb"))
-        datos_pdf = PdfReader(packet)
-        writer = PdfWriter()
-        page = plantilla.pages[0]
-        page.merge_page(datos_pdf.pages[0])
-        writer.add_page(page)
-        with open(pdf_path, "wb") as f:
-            writer.write(f)
-
-        return jsonify({'success': True})
-    except Exception as e:
-        print(e)
-        return jsonify({'success': False})

@@ -7,54 +7,89 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
 
-
 prefactura_bp = Blueprint('prefactura', __name__, url_prefix='/prefactura')
 
-@prefactura_bp.route('/guardar/<int:renta_id>', methods=['POST'])
-def guardar_prefactura(renta_id):
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"success": False, "error": "No se recibieron datos"}), 400
+# === Endpoint: Obtener datos de prefactura (AJAX) ===
+@prefactura_bp.route('/<int:renta_id>')
+def obtener_prefactura(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Detalle de productos
+    cursor.execute("""
+        SELECT p.nombre, d.cantidad, d.dias_renta, d.costo_unitario, d.subtotal
+        FROM renta_detalle d
+        JOIN productos p ON d.id_producto = p.id_producto
+        WHERE d.renta_id = %s
+    """, (renta_id,))
+    detalle = cursor.fetchall()
+    # Totales y traslado
+    cursor.execute("""
+        SELECT total_con_iva, traslado, costo_traslado
+        FROM rentas
+        WHERE id = %s
+    """, (renta_id,))
+    total_info = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return jsonify({
+        "detalle": detalle,
+        "total_con_iva": total_info['total_con_iva'] if total_info else 0,
+        "traslado": total_info['traslado'] if total_info else None,
+        "costo_traslado": total_info['costo_traslado'] if total_info else 0
+    })
 
+
+# === Endpoint: Registrar pago y generar PDF (a implementar) ===
+@prefactura_bp.route('/pago/<int:renta_id>', methods=['POST'])
+def registrar_pago_prefactura(renta_id):
+    from datetime import datetime
+
+    data = request.get_json()
+    tipo = data.get('tipo', 'inicial')
+    metodo = data.get('metodo_pago')
+    monto = data.get('monto')
+    monto_recibido = data.get('monto_recibido')
+    cambio = data.get('cambio')
+    numero_seguimiento = data.get('numero_seguimiento')
+    zona_horaria = str(datetime.now().astimezone().tzinfo)
+
+    try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Insertar prefactura
         cursor.execute("""
             INSERT INTO prefacturas (
-                renta_id, fecha_emision, generada, tipo, pagada,
-                metodo_pago, monto, monto_recibido, cambio, numero_seguimiento,
-                observaciones, zona_horaria
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                renta_id, tipo, pagada, metodo_pago, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, generada
+            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s, 1)
         """, (
-            renta_id,
-            datetime.now(),
-            1,
-            data.get("tipo"),
-            1,
-            data.get("metodo_pago"),
-            data.get("monto"),
-            data.get("monto_recibido") or 0,
-            data.get("cambio") or 0,
-            data.get("numero_seguimiento") or '',
-            '',
-            ''
+            renta_id, tipo, metodo, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria
         ))
+        prefactura_id = cursor.lastrowid  # Obtener el ID de la prefactura recién creada
 
-        prefactura_id = cursor.lastrowid  # ✅ Aquí está la diferencia
+        # Actualizar renta
+        cursor.execute("""
+            UPDATE rentas SET estado_pago='Pago realizado', metodo_pago=%s WHERE id=%s
+        """, (metodo, renta_id))
         conn.commit()
+
         cursor.close()
         conn.close()
 
-        return jsonify({"success": True, "prefactura_id": prefactura_id})
+        return jsonify({'success': True, 'prefactura_id': prefactura_id})
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
-    
+        print(e)
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+
+# === Endpoint: Generar y servir el PDF de la prefactura ===
 @prefactura_bp.route('/pdf/<int:prefactura_id>')
 def generar_pdf_prefactura(prefactura_id):
-
+    # ...tu lógica de generación de PDF aquí (como ya la tienes)...
+    # (No se modifica este bloque, solo mantenlo separado)
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 

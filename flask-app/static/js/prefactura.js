@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('prefactura-total-pago').textContent = '0.00';
             document.getElementById('pago-total-pago').textContent = '0.00';
 
-            fetch(`/rentas/prefactura/${rentaId}`)
+            fetch(`/prefactura/${rentaId}`)
                 .then(resp => resp.json())
                 .then(data => {
                     let html = `
@@ -52,9 +52,46 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     html += `</tbody></table>`;
 
+                    // Calcular subtotal (sin traslado ni IVA)
+                    let subtotal = 0;
+                    data.detalle.forEach(item => {
+                        subtotal += parseFloat(item.subtotal) || 0;
+                    });
+
+                    // Traslado
+                    let trasladoHtml = '';
+                    if (data.costo_traslado && data.costo_traslado > 0) {
+                        trasladoHtml = `<tr>
+                            <td>Traslado <span class="text-muted">(${data.traslado})</span></td>
+                            <td colspan="4" class="text-end">$${parseFloat(data.costo_traslado).toFixed(2)}</td>
+                        </tr>`;
+                    }
+
+                    // IVA y total
+                    const total = parseFloat(data.total_con_iva) || 0;
+                    const iva = total - subtotal - (parseFloat(data.costo_traslado) || 0);
+
+                    html += `
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Subtotal</td>
+                                <td colspan="4" class="text-end">$${subtotal.toFixed(2)}</td>
+                            </tr>
+                            ${trasladoHtml}
+                            <tr>
+                                <td>+IVA (16%)</td>
+                                <td colspan="4" class="text-end">$${iva.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total</strong></td>
+                                <td colspan="4" class="text-end"><strong>$${total.toFixed(2)}</strong></td>
+                            </tr>
+                        </table>
+                    `;
+
                     document.getElementById('prefactura-detalle-pago').innerHTML = html;
-                    document.getElementById('prefactura-total-pago').textContent = parseFloat(data.total_con_iva).toFixed(2);
-                    document.getElementById('pago-total-pago').textContent = parseFloat(data.total_con_iva).toFixed(2);
+                    document.getElementById('prefactura-total-pago').textContent = total.toFixed(2);
+                    document.getElementById('pago-total-pago').textContent = total.toFixed(2);
 
                     // Valores iniciales de pago
                     document.getElementById('metodo-pago-pago').value = 'efectivo';
@@ -117,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             try {
-                const res = await fetch(`/prefactura/guardar/${rentaId}`, {
+                const res = await fetch(`/prefactura/pago/${rentaId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datos)
@@ -139,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (result.isConfirmed) {
                             window.open(`/prefactura/pdf/${json.prefactura_id}`, '_blank');
                         }
+                        window.location.reload();
                     });
                 } else {
                     Swal.fire('Error', 'No se pudo registrar la prefactura', 'error');
