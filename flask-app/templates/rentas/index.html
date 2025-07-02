@@ -132,8 +132,11 @@
                     <i class="bi bi-journal-text"></i>
                   </button>
                   <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-right-circle me-2"></i>Nota de
-                        Salida</a></li>
+                    <li>
+                      <a class="dropdown-item btn-nota-salida" href="#" data-renta-id="{{ renta[0] }}">
+                        <i class="bi bi-arrow-right-circle me-2"></i>Nota de Salida
+                        </a>
+                    </li>
                     <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-left-circle me-2"></i>Nota de
                         Entrada</a></li>
                     <li>
@@ -161,6 +164,7 @@
 </div>
 
 {% include 'rentas/_modal_prefactura.html' %}
+{% include 'rentas/_modal_nota_salida.html' %}
 {% include 'rentas/_modal_nueva_renta.html' %}
 
 
@@ -175,5 +179,6 @@
   window.preciosProductos = {{ precios_productos | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/rentas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nota_salida.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prefactura.js') }}"></script>
 {% endblock %}

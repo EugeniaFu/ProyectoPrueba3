@@ -90,8 +90,20 @@ def modulo_rentas():
         productos=productos,
         productos_por_renta=productos_por_renta,
         sucursal_nombre=sucursal_nombre,
-        precios_productos=precios_productos
+        precios_productos=precios_productos,
+        sucursal_id=sucursal_id 
     )
+
+
+
+
+
+
+
+
+
+
+
 
 @rentas_bp.route('/crear', methods=['POST'])
 def crear_renta():
@@ -113,21 +125,24 @@ def crear_renta():
         fecha_registro = datetime.now()
         fecha_programada = request.form.get('fecha_programada') or None
         costo_traslado = float(request.form.get('costo_traslado') or 0)
-        traslado = request.form.get('traslado') or 'ninguno'  # <-- Nuevo: obtiene el tipo de traslado
-        sucursal_id = session.get('sucursal_id')
+        traslado = request.form.get('traslado') or 'ninguno'
+        id_sucursal = request.form.get('id_sucursal')
+        
+        print("ID SUCURSAL RECIBIDO EN CREAR:", id_sucursal)  # <-- Usar id_sucursal
 
         cursor.execute("""
+                       
             INSERT INTO rentas (
                 cliente_id, fecha_registro, fecha_salida, fecha_entrada,
                 direccion_obra, estado_renta, estado_pago, metodo_pago,
-                total, iva, total_con_iva, observaciones, fecha_programada, sucursal_id,
-                costo_traslado, traslado  -- <-- Nuevo campo aquí
+                total, iva, total_con_iva, observaciones, fecha_programada, id_sucursal,
+                costo_traslado, traslado
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             cliente_id, fecha_registro, fecha_salida, fecha_entrada,
             direccion_obra, estado_renta, estado_pago, metodo_pago,
-            0, 0, 0, observaciones, fecha_programada, sucursal_id,
-            costo_traslado, traslado  # <-- Nuevo valor aquí
+            0, 0, 0, observaciones, fecha_programada, id_sucursal,
+            costo_traslado, traslado
         ))
 
         renta_id = cursor.lastrowid
@@ -181,6 +196,11 @@ def crear_renta():
         conn.close()
 
     return redirect(url_for('rentas.modulo_rentas'))
+
+
+
+
+
 
 
 

@@ -12,7 +12,7 @@ from routes.usuarios import usuarios_bp
 
 from routes.rentas import rentas_bp
 from routes.nota_entrada import notas_entrada_bp
-
+from routes.notas_salida import notas_salida_bp
 from routes.prefactura import prefactura_bp
 
 
@@ -52,7 +52,7 @@ app.register_blueprint(usuarios_bp)
 
 app.register_blueprint(rentas_bp)
 app.register_blueprint(notas_entrada_bp)
-
+app.register_blueprint(notas_salida_bp)
 app.register_blueprint(prefactura_bp)
 
 

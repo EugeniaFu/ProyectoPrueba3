@@ -24,6 +24,7 @@
                             <label class="form-label">Sucursal</label>
                             <input type="text" class="form-control" value="{{ sucursal_nombre or 'No disponible' }}"
                                 readonly>
+                            <input type="hidden" name="id_sucursal" id="id_sucursal" value="{{ sucursal_id }}">
                         </div>
                         <div class="row mb-3">
                             <div class="col">
@@ -130,4 +131,3 @@
                     <i class="bi bi-check2-circle"></i> Guardar Renta
                 </button>
                 <button type="button"
-

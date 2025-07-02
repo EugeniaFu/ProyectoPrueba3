@@ -1,0 +1,65 @@
+<div class="modal fade" id="modalNotaSalida" tabindex="-1" aria-labelledby="modalNotaSalidaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="form-nota-salida" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNotaSalidaLabel">
+                    <i class="bi bi-arrow-right-circle"></i> Nota de Salida
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Folio y fecha/hora -->
+                <div class="mb-2 d-flex justify-content-between">
+                    <div><strong>Folio:</strong> <span id="nota-salida-folio">00000</span></div>
+                    <div><strong>Fecha y hora:</strong> <span id="nota-salida-fecha">--/--/---- --:--</span></div>
+                </div>
+                <!-- Cliente y contacto -->
+                <div class="mb-2">
+                    <strong>Cliente:</strong> <span id="nota-salida-cliente">---</span><br>
+                    <strong>Celular:</strong> <span id="nota-salida-celular">---</span>
+                </div>
+                <!-- Dirección de la obra -->
+                <div class="mb-2">
+                    <strong>Dirección de la obra:</strong> <span id="nota-salida-direccion">---</span>
+                </div>
+                <!-- Periodo de renta -->
+                <div class="mb-2">
+                    <strong>Periodo:</strong>
+                    <span id="nota-salida-periodo">--/--/---- a indefinido</span>
+                </div>
+                <div class="mb-2">
+                    <label for="nota-salida-referencia" class="form-label">Número de referencia:</label>
+                    <input type="text" id="nota-salida-referencia" name="numero_referencia" class="form-control">
+                </div>
+                <!-- Tabla de piezas a entregar -->
+                <div class="mb-3">
+                    <strong>Piezas a entregar:</strong>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Pieza</th>
+                                    <th>Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nota-salida-piezas">
+                                <!-- Aquí se llenan las piezas con JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Observaciones -->
+                <div class="mb-2">
+                    <label for="nota-salida-observaciones" class="form-label">Observaciones:</label>
+                    <textarea id="nota-salida-observaciones" name="observaciones" class="form-control"
+                        rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success" id="btn-generar-nota-salida">
+                    <i class="bi bi-arrow-right-circle"></i> Generar Nota de Salida
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
