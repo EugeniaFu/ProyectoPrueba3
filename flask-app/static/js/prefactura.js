@@ -1,11 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // Abrir modal y cargar datos
     document.body.addEventListener('click', function (e) {
         const target = e.target.closest('.btn-prefactura');
         if (target) {
             e.preventDefault();
 
-            // VALIDACIÓN: No permitir si la fecha de entrada es indefinida
             const fechaEntrada = target.dataset.fechaEntrada;
             if (!fechaEntrada || fechaEntrada.toLowerCase() === 'indefinido' || fechaEntrada.toLowerCase() === 'none') {
                 Swal.fire({
@@ -15,9 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 return;
             }
-            const rentaId = target.dataset.rentaId;
 
-            // Cierra otros modales
+            const rentaId = target.dataset.rentaId;
             document.querySelectorAll('.modal.show').forEach(m => {
                 bootstrap.Modal.getInstance(m)?.hide();
             });
@@ -25,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPrefacturaPago'));
             modal.show();
 
-            // Reset campos
             const form = document.getElementById('form-pago-prefactura-pago');
             form.reset();
             form.dataset.rentaId = rentaId;
@@ -33,6 +29,23 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('prefactura-detalle-pago').innerHTML = '<div class="text-center text-muted">Cargando...</div>';
             document.getElementById('prefactura-total-pago').textContent = '0.00';
             document.getElementById('pago-total-pago').textContent = '0.00';
+
+            // Reiniciar campos
+            const metodoPago = document.getElementById('metodo-pago-pago');
+            const efectivo = document.getElementById('pago-efectivo-pago');
+            const seguimiento = document.getElementById('pago-seguimiento-pago');
+            const montoRecibido = document.getElementById('monto-recibido-pago');
+            const cambio = document.getElementById('cambio-pago');
+            const numSeguimiento = document.getElementById('numero-seguimiento-pago');
+            const btnGenerar = document.getElementById('btn-generar-pago-pago');
+
+            metodoPago.value = '';
+            efectivo.style.display = 'none';
+            seguimiento.style.display = 'none';
+            montoRecibido.value = '';
+            cambio.textContent = '0.00';
+            numSeguimiento.value = '';
+            btnGenerar.style.display = 'none';
 
             fetch(`/prefactura/${rentaId}`)
                 .then(resp => resp.json())
@@ -63,13 +76,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                     html += `</tbody></table>`;
 
-                    // Calcular subtotal (sin traslado ni IVA)
                     let subtotal = 0;
                     data.detalle.forEach(item => {
                         subtotal += parseFloat(item.subtotal) || 0;
                     });
 
-                    // Traslado
                     let trasladoHtml = '';
                     if (data.costo_traslado && data.costo_traslado > 0) {
                         trasladoHtml = `<tr>
@@ -78,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         </tr>`;
                     }
 
-                    // IVA y total
                     const total = parseFloat(data.total_con_iva) || 0;
                     const iva = total - subtotal - (parseFloat(data.costo_traslado) || 0);
 
@@ -104,13 +114,39 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('prefactura-total-pago').textContent = total.toFixed(2);
                     document.getElementById('pago-total-pago').textContent = total.toFixed(2);
 
-                    // Valores iniciales de pago
-                    document.getElementById('metodo-pago-pago').value = 'efectivo';
-                    document.getElementById('monto-recibido-pago').value = '';
-                    document.getElementById('cambio-pago').textContent = '0.00';
-                    document.getElementById('numero-seguimiento-pago').value = '';
-                    document.getElementById('pago-efectivo-pago').style.display = '';
-                    document.getElementById('pago-seguimiento-pago').style.display = 'none';
+                    // Listeners después de mostrar
+                    metodoPago.onchange = () => {
+                        const metodo = metodoPago.value;
+                        btnGenerar.style.display = 'none';
+                        montoRecibido.value = '';
+                        cambio.textContent = '0.00';
+                        numSeguimiento.value = '';
+
+                        if (metodo === 'efectivo') {
+                            efectivo.style.display = '';
+                            seguimiento.style.display = 'none';
+                        } else if (metodo) {
+                            efectivo.style.display = 'none';
+                            seguimiento.style.display = '';
+                        } else {
+                            efectivo.style.display = 'none';
+                            seguimiento.style.display = 'none';
+                        }
+                    };
+
+                    montoRecibido.oninput = () => {
+                        const recibido = parseFloat(montoRecibido.value) || 0;
+                        const total = parseFloat(document.getElementById('pago-total-pago').textContent) || 0;
+                        const calcCambio = recibido - total;
+                        cambio.textContent = calcCambio > 0 ? calcCambio.toFixed(2) : '0.00';
+                        btnGenerar.style.display = recibido >= total ? '' : 'none';
+                    };
+
+                    numSeguimiento.oninput = () => {
+                        if (metodoPago.value !== 'efectivo') {
+                            btnGenerar.style.display = numSeguimiento.value.trim().length > 0 ? '' : 'none';
+                        }
+                    };
                 })
                 .catch(err => {
                     document.getElementById('prefactura-detalle-pago').innerHTML = '<div class="text-danger">Error al cargar la prefactura.</div>';
@@ -119,38 +155,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Mostrar campos según método de pago
-    const metodoPago = document.getElementById('metodo-pago-pago');
-    if (metodoPago) {
-        metodoPago.addEventListener('change', function () {
-            const efectivo = document.getElementById('pago-efectivo-pago');
-            const seguimiento = document.getElementById('pago-seguimiento-pago');
-            efectivo.style.display = this.value === 'efectivo' ? '' : 'none';
-            seguimiento.style.display = this.value !== 'efectivo' ? '' : 'none';
-        });
-    }
-
-    // Calcular cambio
-    const montoRecibido = document.getElementById('monto-recibido-pago');
-    if (montoRecibido) {
-        montoRecibido.addEventListener('input', function () {
-            const total = parseFloat(document.getElementById('pago-total-pago').textContent) || 0;
-            const recibido = parseFloat(this.value) || 0;
-            const cambio = recibido - total;
-            document.getElementById('cambio-pago').textContent = cambio > 0 ? cambio.toFixed(2) : '0.00';
-        });
-    }
-
     // Enviar prefactura/pago
     const form = document.getElementById('form-pago-prefactura-pago');
     if (form) {
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const btn = document.getElementById('btn-guardar-prefactura');
+            const btn = document.getElementById('btn-generar-pago-pago');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Procesando...';
             }
 
             const rentaId = form.dataset.rentaId;
@@ -179,8 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const json = await res.json();
                 if (json.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalPrefacturaPago'));
-                    modal.hide();
+                    bootstrap.Modal.getInstance(document.getElementById('modalPrefacturaPago')).hide();
 
                     Swal.fire({
                         title: 'Prefactura generada',
@@ -203,9 +216,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire('Error', 'Error al enviar los datos al servidor', 'error');
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-save"></i> Guardar';
+                    btn.innerHTML = 'Generar pago';
                 }
-
             }
         });
     }

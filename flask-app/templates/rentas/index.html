@@ -13,6 +13,25 @@
     display: none !important;
   }
 </style>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+          const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+          bsAlert.close();
+        });
+      }, 3000);
+    </script>
+  {% endif %}
+{% endwith %}
+
 <div class="container-fluid py-4">
   <div class="rentas-box-container">
     <div class="rentas-section-header d-flex justify-content-between align-items-center mb-3">
@@ -41,7 +60,7 @@
 
     <!-- Tabla de clientes -->
     <div class="table-responsive">
-      <table class="table table-rentas align-middle">
+      <table id="tablaRentas" class="table table-rentas align-middle">
         <thead>
           <tr>
             <th>ID</th>
@@ -159,6 +178,7 @@
           {% endfor %}
         </tbody>
       </table>
+      <div id="pagination-container" class="mt-3 d-flex justify-content-center"></div>
     </div>
   </div>
 </div>
@@ -181,4 +201,5 @@
 <script src="{{ url_for('static', filename='js/rentas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/nota_salida.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prefactura.js') }}"></script>
+<script src="{{ url_for('static', filename='js/paginacion.js') }}"></script>
 {% endblock %}

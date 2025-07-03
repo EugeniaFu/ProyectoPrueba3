@@ -7,6 +7,26 @@
 {% endblock %}
 
 {% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+    <script>
+      setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+          const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+          bsAlert.close();
+        });
+      }, 3000);
+    </script>
+  {% endif %}
+{% endwith %}
+
 <div class="clientes-box-container">
     <div class="clientes-section-header">
         <h2 class="clientes-section-title"><i class="bi bi-person-badge"></i> Gestión de Empleados</h2>

@@ -27,28 +27,29 @@
         <div class="mb-2">
           <strong>Total a pagar: $<span id="pago-total-pago">0.00</span></strong>
         </div>
-        <div class="mb-2">
-          <label for="metodo-pago-pago">Método de pago:</label>
-          <select id="metodo-pago-pago" name="metodo_pago" class="form-select" required>
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta_debito">Tarjeta Débito</option>
-            <option value="tarjeta_credito">Tarjeta Crédito</option>
-            <option value="transferencia">Transferencia</option>
-          </select>
-        </div>
-        <div id="pago-efectivo-pago" style="display:none;">
-          <label for="monto-recibido-pago">Monto recibido:</label>
-          <input type="number" id="monto-recibido-pago" name="monto_recibido" class="form-control" min="0" step="0.01">
-          <div>Cambio: $<span id="cambio-pago">0.00</span></div>
-        </div>
-        <div id="pago-seguimiento-pago" style="display:none;">
-          <label for="numero-seguimiento-pago">Número de seguimiento:</label>
-          <input type="text" id="numero-seguimiento-pago" name="numero_seguimiento" class="form-control">
+        <div class="row">
+          <div class="mb-2 col-md-4">
+            <label for="metodo-pago-pago">Método de pago:</label>
+            <select id="metodo-pago-pago" name="metodo_pago" class="form-select" required>
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta_debito">Tarjeta Débito</option>
+              <option value="tarjeta_credito">Tarjeta Crédito</option>
+              <option value="transferencia">Transferencia</option>
+            </select>
+          </div>
+          <div id="pago-efectivo-pago" class="col-md-4" style="display:none;">
+            <label for="monto-recibido-pago">Monto recibido:</label>
+            <input type="number" id="monto-recibido-pago" name="monto_recibido" class="form-control" min="0" step="0.01">
+            <div>Cambio: $<span id="cambio-pago">0.00</span></div>
+          </div>
+          <div id="pago-seguimiento-pago" class="col-md-4" style="display:none;">
+            <label for="numero-seguimiento-pago">Número de seguimiento:</label>
+            <input type="text" id="numero-seguimiento-pago" name="numero_seguimiento" class="form-control">
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-success" id="btn-generar-pago-pago" type="submit">Generar pago</button>
-        
+        <button class="btn btn-success" id="btn-generar-pago-pago" type="submit" style="display: none;">Generar pago</button>
       </div>
     </form>
   </div>
