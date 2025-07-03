@@ -4,6 +4,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const target = e.target.closest('.btn-prefactura');
         if (target) {
             e.preventDefault();
+
+            // VALIDACIÓN: No permitir si la fecha de entrada es indefinida
+            const fechaEntrada = target.dataset.fechaEntrada;
+            if (!fechaEntrada || fechaEntrada.toLowerCase() === 'indefinido' || fechaEntrada.toLowerCase() === 'none') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No puedes generar la prefactura',
+                    text: 'Debes registrar primero la nota de entrada para esta renta indefinida.'
+                });
+                return;
+            }
             const rentaId = target.dataset.rentaId;
 
             // Cierra otros modales
@@ -136,6 +147,12 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            const btn = document.getElementById('btn-guardar-prefactura');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+            }
+
             const rentaId = form.dataset.rentaId;
             const tipo = document.getElementById('tipo_prefactura_pago').value;
             const metodo = document.getElementById('metodo-pago-pago').value;
@@ -184,6 +201,11 @@ document.addEventListener('DOMContentLoaded', function () {
             } catch (err) {
                 console.error('Error en el guardado:', err);
                 Swal.fire('Error', 'Error al enviar los datos al servidor', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-save"></i> Guardar';
+                }
+
             }
         });
     }

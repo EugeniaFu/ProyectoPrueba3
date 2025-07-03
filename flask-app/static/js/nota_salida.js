@@ -31,14 +31,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('nota-salida-periodo').textContent = data.periodo;
 
                     let piezasHtml = '';
+
                     if (data.piezas && data.piezas.length > 0) {
                         data.piezas.forEach(pieza => {
                             piezasHtml += `
-                                <tr>
-                                    <td>${pieza.nombre_pieza}</td>
-                                    <td>${pieza.cantidad}</td>
-                                </tr>
-                            `;
+            <tr>
+                <td>${pieza.nombre_pieza}</td>
+                <td>
+                    <input type="number"
+                        class="form-control form-control-sm pieza-cantidad"
+                        min="0"
+                        max="${pieza.cantidad}"
+                        value="${pieza.cantidad}"
+                        data-id-pieza="${pieza.id_pieza}">
+                </td>
+            </tr>
+        `;
                         });
                     } else {
                         piezasHtml = '<tr><td colspan="2" class="text-center text-muted">Sin piezas asociadas</td></tr>';
@@ -64,6 +72,10 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            const btn = document.getElementById('btn-generar-nota-salida');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando...';
+
             // Obtén el rentaId del último modal abierto
             const rentaId = document.querySelector('.btn-nota-salida.active')?.dataset.rentaId ||
                 document.querySelector('.btn-nota-salida[data-renta-id]')?.dataset.rentaId;
@@ -72,13 +84,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Obtén piezas del modal
             const piezas = [];
-            document.querySelectorAll('#nota-salida-piezas tr').forEach(row => {
-                const nombre = row.children[0]?.textContent;
-                const cantidad = parseInt(row.children[1]?.textContent);
-                // Si tienes el id_pieza en data-id, úsalo:
-                // const id_pieza = row.dataset.idPieza;
-                // piezas.push({ id_pieza, cantidad });
-                // Si no, deberás modificar el renderizado para incluir el id_pieza como data-id
+            document.querySelectorAll('.pieza-cantidad').forEach(input => {
+                const id_pieza = input.dataset.idPieza;
+                const cantidad = parseInt(input.value);
+                if (cantidad > 0) {
+                    piezas.push({ id_pieza: parseInt(id_pieza), cantidad });
+                }
             });
 
             // Pero lo ideal es que al cargar el modal, guardes el array de piezas (con id_pieza y cantidad) en una variable global.
@@ -93,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const payload = {
                 numero_referencia,
                 observaciones,
-                piezas: window.piezasNotaSalida || []
+                piezas
             };
 
             try {
@@ -111,8 +122,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (err) {
                 Swal.fire('Error', 'Error al enviar los datos al servidor', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-right-circle"></i> Generar Nota de Salida';
             }
         });
+
     }
 
 

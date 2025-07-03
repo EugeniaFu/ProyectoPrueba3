@@ -142,7 +142,7 @@
                     <li>
                       <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pagado' %}disabled{% endif %}"
                         href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
-                        data-fecha-entrada="{{ renta[3] }}" {% if renta[5]|lower=='pagado' %}tabindex="-1"
+                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if renta[5]|lower=='pagado' %}tabindex="-1"
                         aria-disabled="true" {% endif %}>
                         <i class="bi bi-journal-check me-2"></i>Prefactura
                       </a>

@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+
+
     // Mostrar/ocultar fecha programada
     const chkProgramada = document.getElementById('renta_programada');
     const grupoProgramada = document.getElementById('fecha_programada_group');
@@ -175,5 +177,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (trasladoSelect) trasladoSelect.addEventListener('change', actualizarTipoTraslado);
     // Llama una vez al cargar
     actualizarTipoTraslado();
+
+
+    // Deshabilitar botón y mostrar spinner al enviar el formulario de nueva renta
+    document.addEventListener('DOMContentLoaded', function () {
+        const formNuevaRenta = document.getElementById('form-nueva-renta');
+        const btnGuardarRenta = document.getElementById('btn-guardar-renta');
+        if (formNuevaRenta && btnGuardarRenta) {
+            formNuevaRenta.addEventListener('submit', function () {
+                btnGuardarRenta.disabled = true;
+                btnGuardarRenta.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+            });
+        }
+    });
 
 })

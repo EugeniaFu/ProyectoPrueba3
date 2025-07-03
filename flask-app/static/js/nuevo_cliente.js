@@ -61,6 +61,7 @@ function eliminarArchivo(idx) {
     renderPreview();
 }
 
+
 document.getElementById('formNuevoCliente').addEventListener('submit', function (e) {
     if (archivosSeleccionados.length === 0) {
         alert('Debes subir al menos un documento.');
@@ -68,6 +69,14 @@ document.getElementById('formNuevoCliente').addEventListener('submit', function 
         return;
     }
     const form = e.target;
+
+    // Deshabilita el botón y muestra spinner
+    const btn = document.getElementById('btn-guardar-cliente');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+    }
+
     const formData = new FormData(form);
     archivosSeleccionados.forEach((item, idx) => {
         formData.append('documentos', item.file);
@@ -98,14 +107,14 @@ let previewFoto = document.getElementById('previewFoto');
 let fotoInput = document.getElementById('foto_documento');
 let stream = null;
 
-btnCamara.onclick = async function() {
+btnCamara.onclick = async function () {
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
     video.style.display = 'block';
     btnFoto.style.display = 'inline-block';
 };
 
-btnFoto.onclick = function() {
+btnFoto.onclick = function () {
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     let dataUrl = canvas.toDataURL('image/png');
     // Crea un archivo a partir del base64

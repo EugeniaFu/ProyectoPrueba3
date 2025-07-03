@@ -6,6 +6,11 @@ from utils.db import get_db_connection
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
+from PyPDF2 import PdfReader, PdfWriter
+from num2words import num2words 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 
 prefactura_bp = Blueprint('prefactura', __name__, url_prefix='/prefactura')
 
@@ -85,102 +90,117 @@ def registrar_pago_prefactura(renta_id):
 
 
 
-# === Endpoint: Generar y servir el PDF de la prefactura ===
+
+
+
+
+
+
+
+
+
+
 @prefactura_bp.route('/pdf/<int:prefactura_id>')
 def generar_pdf_prefactura(prefactura_id):
-    # ...tu lógica de generación de PDF aquí (como ya la tienes)...
-    # (No se modifica este bloque, solo mantenlo separado)
+    # --- OBTENER DATOS DE LA BD ---
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-
-    # Consulta principal
     cursor.execute("""
-        SELECT p.*, r.fecha_entrada, r.fecha_salida
+        SELECT p.*, r.fecha_entrada, r.fecha_salida, r.direccion_obra, r.metodo_pago, r.iva,
+                   r.traslado, r.costo_traslado,
+               CONCAT(c.nombre, ' ', c.apellido1, ' ', c.apellido2) AS cliente_nombre,
+               c.telefono AS celular,
+               c.codigo_cliente
         FROM prefacturas p
         JOIN rentas r ON p.renta_id = r.id
+        JOIN clientes c ON r.cliente_id = c.id
         WHERE p.id = %s
     """, (prefactura_id,))
     prefactura = cursor.fetchone()
 
-    if not prefactura:
-        cursor.close()
-        conn.close()
-        return "No se encontró la prefactura", 404
-
-    # Detalle
     cursor.execute("""
-        SELECT p.nombre, rd.cantidad, rd.dias_renta, rd.costo_unitario, rd.subtotal
+        SELECT prod.nombre, rd.cantidad, rd.dias_renta, rd.costo_unitario, rd.subtotal
         FROM renta_detalle rd
-        JOIN productos p ON rd.id_producto = p.id_producto
+        JOIN productos prod ON rd.id_producto = prod.id_producto
         WHERE rd.renta_id = %s
     """, (prefactura['renta_id'],))
     detalles = cursor.fetchall()
-
     cursor.close()
     conn.close()
 
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
+    # --- GENERAR OVERLAY CON DATOS ---
+    packet = BytesIO()
+    can = canvas.Canvas(packet, pagesize=letter)
+    pdfmetrics.registerFont(TTFont('Carlito', os.path.join(current_app.root_path, 'static/fonts/Carlito-Regular.ttf')))
 
-    # LOGO (superior izquierda)
-    logo_path = os.path.join(current_app.root_path, 'static/img/logo.png')
-    if os.path.exists(logo_path):
-        c.drawImage(logo_path, inch * 0.5, height - inch * 1.1, width=100, height=100, preserveAspectRatio=True, mask='auto')
+    # Ajusta las posiciones X, Y según tu plantilla
+    can.setFont("Carlito", 13)
+    can.drawString(65, 701, prefactura['cliente_nombre'])  # NOMBRE
+    can.drawString(65, 685, prefactura['celular'])         # CELULAR
+    can.drawString(101, 669, prefactura['metodo_pago'])    # FORMA DE PAGO
+    can.drawString(112, 651, f"{prefactura['fecha_salida'].strftime('%d/%m/%Y')} - {prefactura['fecha_entrada'].strftime('%d/%m/%Y') if prefactura['fecha_entrada'] else 'Indefinido'}")  # PERIODO DE RENTA
+    can.drawString(417, 697, prefactura['fecha_emision'].strftime('%d/%m/%Y'))  # FECHA
+    can.drawString(555, 730, f"# {prefactura['folio']}" if 'folio' in prefactura else f"# {prefactura_id}")  # FOLIO de nota)  # FOLIO de nota
 
-    # DATOS EMPRESA - CENTRO SUPERIOR
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width / 2, height - 50, "PUNTALES Y ANDAMIOS COLOSIO")
-
-    c.setFont("Helvetica", 10)
-    c.drawCentredString(width / 2, height - 65, "Dirección: CALLE ECUADOR #140, ENTRE AV. COLOSIO Y CALLE AZTECA, SANTA ANA")
-    c.drawCentredString(width / 2, height - 80, "Correo: puntalesyandamioscolosio@hotmail.com  |  WhatsApp: (981) 203 2257")
-    c.drawCentredString(width / 2, height - 93, "Teléfono: (981) 123 4567")
-
-    # PREFECTURA INFO
-    y = height - inch * 1.8
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(inch, y, f"Prefactura #{prefactura_id}")
-    y -= 20
-
-    c.setFont("Helvetica", 12)
-    c.drawString(inch, y, f"Fecha emisión: {prefactura['fecha_emision'].strftime('%Y-%m-%d %H:%M:%S')}")
-    y -= 20
-    c.drawString(inch, y, f"Renta desde: {prefactura['fecha_entrada']} hasta {prefactura['fecha_salida']}")
-    y -= 30
-
-    # ENCABEZADO TABLA
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(inch, y, "Producto")
-    c.drawString(3*inch, y, "Cantidad")
-    c.drawString(4*inch, y, "Días")
-    c.drawString(5*inch, y, "Costo unitario")
-    c.drawString(6.5*inch, y, "Subtotal")
-    y -= 15
-    c.line(inch, y, 7.5*inch, y)
-    y -= 15
-
-    # DETALLE
-    c.setFont("Helvetica", 12)
+    # --- TABLA DE PRODUCTOS ---
+    y = 610
+    can.setFont("Carlito", 13)
+    subtotal_general = 0  # Suma de subtotales de productos
     for item in detalles:
-        if y < inch:
-            c.showPage()
-            y = height - inch
-        c.drawString(inch, y, item['nombre'])
-        c.drawRightString(3.5*inch, y, str(item['cantidad']))
-        c.drawRightString(4.5*inch, y, str(item['dias_renta']))
-        c.drawRightString(6*inch, y, f"${item['costo_unitario']:.2f}")
-        c.drawRightString(7.5*inch, y, f"${item['subtotal']:.2f}")
-        y -= 20
+        can.drawString(60, y, item['nombre'])  # DESCRIPCIÓN
+        can.drawRightString(350, y, str(item['cantidad']))  # CANT.
+        can.drawRightString(400, y, str(item['dias_renta']))  # DÍAS
+        can.drawRightString(490, y, f"${item['costo_unitario']:.2f}")  # COSTO
+        can.drawRightString(570, y, f"${item['subtotal']:.2f}")  # SUBTOTAL
+        subtotal_general += float(item['subtotal'])
+        y -= 18
 
-    y -= 10
-    c.line(inch, y, 7.5*inch, y)
-    y -= 20
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(7.5*inch, y, f"Total: ${prefactura['monto']:.2f}")
+    # --- TOTALES ---
+    can.setFont("Carlito", 11)
+    monto = prefactura['monto']
+    monto_entero = int(monto)
+    monto_centavos = int(round((monto - monto_entero) * 100))
+    monto_letras = num2words(monto_entero, lang='es').upper()
+    if monto_centavos > 0:
+        monto_letras = f"{monto_letras} PESOS CON {monto_centavos:02d}/100 M.N."
+    else:
+        monto_letras = f"{monto_letras} PESOS 00/100 M.N."
+    can.drawString(55, 486, monto_letras)
+    
+    can.setFont("Carlito", 13)
+    can.drawRightString(593, 484, f"${subtotal_general:.2f}")  # SUBTOTAL (suma de productos)
+    can.drawRightString(593, 449, f"${prefactura['iva']:.2f}")       # IVA
+    
+    can.setFont("Carlito", 13)
+    can.drawRightString(593, 430, f"${prefactura['monto']:.2f}")     # TOTAL
 
-    c.showPage()
-    c.save()
+        # --- TRASLADO ---
+    traslado_tipo = prefactura.get('traslado', 'ninguno')
+    costo_traslado = prefactura.get('costo_traslado', 0)
 
-    buffer.seek(0)
-    return send_file(buffer, download_name=f"prefactura_{prefactura_id}.pdf", mimetype='application/pdf')
+    # Texto a la izquierda
+    can.setFont("Carlito", 11)
+    can.drawString(463, 467, f"({traslado_tipo.capitalize()})")  # Ajusta X,Y según tu plantilla
+
+    # Costo a la derecha
+    can.setFont("Carlito", 13)
+    can.drawRightString(593, 464, f"${costo_traslado:.2f}")  # Ajusta X,Y según tu plantilla
+
+    # SOLO UNA VEZ, al final:
+    can.save()
+    packet.seek(0)
+
+    # --- COMBINAR CON LA PLANTILLA ---
+    plantilla_path = os.path.join(current_app.root_path, 'static/notas/SUBTOTAL.pdf')
+    plantilla_pdf = PdfReader(plantilla_path)
+    overlay_pdf = PdfReader(packet)
+    output = PdfWriter()
+
+    page = plantilla_pdf.pages[0]
+    page.merge_page(overlay_pdf.pages[0])
+    output.add_page(page)
+
+    output_stream = BytesIO()
+    output.write(output_stream)
+    output_stream.seek(0)
+    return send_file(output_stream, download_name=f"prefactura_{prefactura_id}.pdf", mimetype='application/pdf')

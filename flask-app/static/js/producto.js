@@ -35,7 +35,7 @@ function aplicarFiltros() {
   const filtro = filtroActual;
   const texto = (document.getElementById('buscadorProductos')?.value || '').toLowerCase();
 
-  document.querySelectorAll('.table-inventario tbody tr').forEach(function(row) {
+  document.querySelectorAll('.table-inventario tbody tr').forEach(function (row) {
     const estatus = row.getAttribute('data-estatus');
     const contenido = row.innerText.toLowerCase();
 
@@ -54,7 +54,7 @@ function filtrarProductos(estatus) {
 }
 window.filtrarProductos = filtrarProductos;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // Guardar las opciones de piezas para JS dinámico
   var select = document.querySelector('#piezasKit select.form-select');
   if (select) {
@@ -97,7 +97,7 @@ function eliminarKitPiezaRowEditar(btn) {
 }
 
 // Guarda las opciones de piezas para JS dinámico (ya lo tienes en tu código)
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   var select = document.querySelector('#piezasKit select.form-select');
   if (select) {
     window.piezasOptionsHTML = select.innerHTML;
@@ -113,12 +113,12 @@ function toggleCamposPrecioNuevo() {
   const camposRangos = document.getElementById('camposRangosNuevo');
   if (check.checked) {
     camposRangos.style.display = 'none';
-    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function(input) {
+    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function (input) {
       input.required = false;
     });
   } else {
     camposRangos.style.display = 'flex';
-    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function(input) {
+    document.querySelectorAll('input[name="precio_7dias"], input[name="precio_15dias"], input[name="precio_30dias"], input[name="precio_31mas"]').forEach(function (input) {
       input.required = true;
     });
   }
@@ -135,12 +135,12 @@ function toggleCamposPrecioEditar(idProducto) {
   const camposRangos = document.getElementById('camposRangosEditar' + idProducto);
   if (check.checked) {
     camposRangos.style.display = 'none';
-    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function(input) {
+    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function (input) {
       input.required = false;
     });
   } else {
     camposRangos.style.display = 'flex';
-    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function(input) {
+    document.querySelectorAll(`#camposRangosEditar${idProducto} input[name="precio_7dias"], #camposRangosEditar${idProducto} input[name="precio_15dias"], #camposRangosEditar${idProducto} input[name="precio_30dias"], #camposRangosEditar${idProducto} input[name="precio_31mas"]`).forEach(function (input) {
       input.required = true;
     });
   }
@@ -152,7 +152,7 @@ function mostrarSelectorPiezas() {
   document.getElementById('piezasKit').style.display = tipo === 'conjunto' ? 'block' : 'none';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // ...existing code...
 
   // Cuando se abre el modal de nuevo producto, mostrar el selector correcto
@@ -162,4 +162,18 @@ document.addEventListener('DOMContentLoaded', function() {
       mostrarSelectorPiezas();
     });
   }
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const formNuevoProducto = document.getElementById('form-nuevo-producto');
+    const btnGuardarProducto = document.getElementById('btn-guardar-producto');
+    if (formNuevoProducto && btnGuardarProducto) {
+      formNuevoProducto.addEventListener('submit', function () {
+        btnGuardarProducto.disabled = true;
+        btnGuardarProducto.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+      });
+    }
+  });
+
+
 });

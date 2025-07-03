@@ -173,7 +173,7 @@
               <label class="form-label">¿Precio único por día?</label>
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="precioUnicoEditar{{ producto.id_producto }}"
-                  name="precio_unico" value="1" {% if producto.precio_unico %}checked{% endif %}
+                  name="precio_unico" value="1" {% if producto.precio_unico %}checked{% endif %} 
                   onchange="toggleCamposPrecioEditar({{ producto.id_producto }})">
                 <label class="form-check-label" for="precioUnicoEditar{{ producto.id_producto }}">Sí</label>
               </div>
@@ -367,7 +367,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-danger">Guardar</button>
+          <button type="submit" class="btn btn-danger" id="btn-guardar-producto">Guardar</button>
         </div>
       </div>
     </form>
