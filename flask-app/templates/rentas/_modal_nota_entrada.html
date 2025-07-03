@@ -1,0 +1,88 @@
+<div class="modal fade" id="modalNotaEntrada" tabindex="-1" aria-labelledby="modalNotaEntradaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <form id="form-nota-entrada" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNotaEntradaLabel">
+                    <i class="bi bi-arrow-left-circle"></i> Nota de Entrada
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Folio y fecha/hora -->
+                <div class="mb-2 d-flex justify-content-between">
+                    <div><strong>Folio:</strong> <span id="nota-entrada-folio">00000</span></div>
+                    <div><strong>Fecha y hora:</strong> <span id="nota-entrada-fecha">--/--/---- --:--</span></div>
+                </div>
+                
+                <!-- Cliente y contacto -->
+                <div class="mb-2">
+                    <strong>Cliente:</strong> <span id="nota-entrada-cliente">---</span><br>
+                    <strong>Teléfono:</strong> <span id="nota-entrada-telefono">---</span>
+                </div>
+                
+                <!-- Dirección de obra -->
+                <div class="mb-2">
+                    <strong>Dirección de obra:</strong> <span id="nota-entrada-direccion">---</span>
+                </div>
+                
+                <!-- Fecha límite de entrega -->
+                <div class="mb-2">
+                    <strong>Fecha límite de entrega:</strong> <span id="nota-entrada-fecha-limite">---</span>
+                </div>
+
+                <!-- Alerta de retraso -->
+                <div id="alerta-retraso" class="alert alert-warning" style="display: none;">
+                    <strong>¡Entrega con retraso!</strong> Se aplicará un cobro adicional por el retraso.
+                </div>
+
+                <!-- Para rentas indefinidas -->
+                <div class="mb-3">
+                    <label for="fecha-entrada-real" class="form-label">Fecha real de entrada (solo para rentas indefinidas):</label>
+                    <input type="date" id="fecha-entrada-real" class="form-control">
+                </div>
+
+                <!-- Cobros adicionales -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="cobro-retraso" class="form-label">Cobro adicional:</label>
+                        <input type="number" id="cobro-retraso" class="form-control" step="0.01" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="motivo-cobro" class="form-label">Motivo del cobro:</label>
+                        <input type="text" id="motivo-cobro" class="form-control" placeholder="Ej: Retraso, daños, etc.">
+                    </div>
+                </div>
+
+                <!-- Tabla de piezas a recibir -->
+                <div class="mb-3">
+                    <strong>Piezas a recibir:</strong>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Pieza</th>
+                                    <th>Cant. Esperada</th>
+                                    <th>Cant. Recibida</th>
+                                    <th>Estado</th>
+                                    <th>Costo Daño</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nota-entrada-piezas"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="mb-2">
+                    <label for="nota-entrada-observaciones" class="form-label">Observaciones:</label>
+                    <textarea id="nota-entrada-observaciones" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success" id="btn-generar-nota-entrada">
+                    <i class="bi bi-arrow-left-circle"></i> Generar Nota de Entrada
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

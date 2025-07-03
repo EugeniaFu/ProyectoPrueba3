@@ -140,7 +140,7 @@ def generar_pdf_prefactura(prefactura_id):
     can.drawString(101, 669, prefactura['metodo_pago'])    # FORMA DE PAGO
     can.drawString(112, 651, f"{prefactura['fecha_salida'].strftime('%d/%m/%Y')} - {prefactura['fecha_entrada'].strftime('%d/%m/%Y') if prefactura['fecha_entrada'] else 'Indefinido'}")  # PERIODO DE RENTA
     can.drawString(417, 697, prefactura['fecha_emision'].strftime('%d/%m/%Y'))  # FECHA
-    can.drawString(555, 730, f"# {prefactura['folio']}" if 'folio' in prefactura else f"# {prefactura_id}")  # FOLIO de nota)  # FOLIO de nota
+    can.drawString(559, 732, f"# {prefactura['folio']}" if 'folio' in prefactura else f"# {prefactura_id}")  # FOLIO de nota)  # FOLIO de nota
 
     # --- TABLA DE PRODUCTOS ---
     y = 610
@@ -148,10 +148,10 @@ def generar_pdf_prefactura(prefactura_id):
     subtotal_general = 0  # Suma de subtotales de productos
     for item in detalles:
         can.drawString(60, y, item['nombre'])  # DESCRIPCIÓN
-        can.drawRightString(350, y, str(item['cantidad']))  # CANT.
-        can.drawRightString(400, y, str(item['dias_renta']))  # DÍAS
-        can.drawRightString(490, y, f"${item['costo_unitario']:.2f}")  # COSTO
-        can.drawRightString(570, y, f"${item['subtotal']:.2f}")  # SUBTOTAL
+        can.drawRightString(354, y, str(item['cantidad']))  # CANT.
+        can.drawRightString(407, y, str(item['dias_renta']))  # DÍAS
+        can.drawRightString(506, y, f"${item['costo_unitario']:.2f}")  # COSTO
+        can.drawRightString(588, y, f"${item['subtotal']:.2f}")  # SUBTOTAL
         subtotal_general += float(item['subtotal'])
         y -= 18
 
@@ -165,14 +165,14 @@ def generar_pdf_prefactura(prefactura_id):
         monto_letras = f"{monto_letras} PESOS CON {monto_centavos:02d}/100 M.N."
     else:
         monto_letras = f"{monto_letras} PESOS 00/100 M.N."
-    can.drawString(55, 486, monto_letras)
+    can.drawString(44, 487, monto_letras)
     
     can.setFont("Carlito", 13)
-    can.drawRightString(593, 484, f"${subtotal_general:.2f}")  # SUBTOTAL (suma de productos)
-    can.drawRightString(593, 449, f"${prefactura['iva']:.2f}")       # IVA
+    can.drawRightString(592, 484, f"${subtotal_general:.2f}")  # SUBTOTAL (suma de productos)
+    can.drawRightString(592, 453, f"${prefactura['iva']:.2f}")       # IVA
     
     can.setFont("Carlito", 13)
-    can.drawRightString(593, 430, f"${prefactura['monto']:.2f}")     # TOTAL
+    can.drawRightString(592, 437, f"${prefactura['monto']:.2f}")     # TOTAL
 
         # --- TRASLADO ---
     traslado_tipo = prefactura.get('traslado', 'ninguno')
@@ -180,18 +180,18 @@ def generar_pdf_prefactura(prefactura_id):
 
     # Texto a la izquierda
     can.setFont("Carlito", 11)
-    can.drawString(463, 467, f"({traslado_tipo.capitalize()})")  # Ajusta X,Y según tu plantilla
+    can.drawString(462, 470, f"({traslado_tipo.capitalize()})")  # Ajusta X,Y según tu plantilla
 
     # Costo a la derecha
     can.setFont("Carlito", 13)
-    can.drawRightString(593, 464, f"${costo_traslado:.2f}")  # Ajusta X,Y según tu plantilla
+    can.drawRightString(592, 469, f"${costo_traslado:.2f}")  # Ajusta X,Y según tu plantilla
 
     # SOLO UNA VEZ, al final:
     can.save()
     packet.seek(0)
 
     # --- COMBINAR CON LA PLANTILLA ---
-    plantilla_path = os.path.join(current_app.root_path, 'static/notas/SUBTOTAL.pdf')
+    plantilla_path = os.path.join(current_app.root_path, 'static/notas/plantilla_prefactura.pdf')
     plantilla_pdf = PdfReader(plantilla_path)
     overlay_pdf = PdfReader(packet)
     output = PdfWriter()

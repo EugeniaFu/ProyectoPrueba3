@@ -115,10 +115,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 const json = await res.json();
                 if (json.success) {
-                    Swal.fire('¡Nota de salida generada!', `Folio: ${json.folio}`, 'success')
-                        .then(() => window.location.reload());
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalNotaSalida'));
+                    modal.hide();
+
+                    Swal.fire({
+                        title: 'Nota de salida generada',
+                        text: `Folio: ${json.folio}. ¿Deseas imprimir la nota de salida ahora?`,
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, imprimir',
+                        cancelButtonText: 'No'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            window.open(`/notas_salida/pdf/${json.nota_salida_id}`, '_blank');
+                        }
+                        window.location.reload();
+                    });
                 } else {
                     Swal.fire('Error', json.error || 'No se pudo guardar la nota de salida', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-arrow-right-circle"></i> Generar Nota de Salida';
                 }
             } catch (err) {
                 Swal.fire('Error', 'Error al enviar los datos al servidor', 'error');
