@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from datetime import datetime
-from flask import Blueprint, request, jsonify, send_file, current_app
+from flask import Blueprint, redirect, request, jsonify, send_file, current_app, url_for
 from utils.db import get_db_connection
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -55,6 +55,7 @@ def registrar_pago_prefactura(renta_id):
     monto = data.get('monto')
     monto_recibido = data.get('monto_recibido')
     cambio = data.get('cambio')
+    facturable = data.get('facturable', False)
     numero_seguimiento = data.get('numero_seguimiento')
     zona_horaria = str(datetime.now().astimezone().tzinfo)
 
@@ -65,10 +66,10 @@ def registrar_pago_prefactura(renta_id):
         # Insertar prefactura
         cursor.execute("""
             INSERT INTO prefacturas (
-                renta_id, tipo, pagada, metodo_pago, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, generada
-            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s, 1)
+                renta_id, tipo, pagada, metodo_pago, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, generada, facturable
+            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s, %s, 1)
         """, (
-            renta_id, tipo, metodo, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria
+            renta_id, tipo, metodo, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, facturable
         ))
         prefactura_id = cursor.lastrowid  # Obtener el ID de la prefactura recién creada
 
@@ -204,3 +205,15 @@ def generar_pdf_prefactura(prefactura_id):
     output.write(output_stream)
     output_stream.seek(0)
     return send_file(output_stream, download_name=f"prefactura_{prefactura_id}.pdf", mimetype='application/pdf')
+
+@prefactura_bp.route('/pdf_renta/<int:renta_id>')
+def generar_pdf_prefactura_por_renta(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Buscar prefactura por renta_id
+    cursor.execute("SELECT id FROM prefacturas WHERE renta_id = %s ORDER BY id DESC LIMIT 1", (renta_id,))
+    prefactura = cursor.fetchone()
+    if not prefactura:
+        return f"No hay prefactura para la renta {renta_id}", 404
+    # Redirigir a la función original con el id de prefactura encontrado
+    return redirect(url_for('prefactura.generar_pdf_prefactura', prefactura_id=prefactura['id']))

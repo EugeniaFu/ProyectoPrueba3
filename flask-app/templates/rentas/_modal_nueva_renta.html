@@ -66,8 +66,13 @@
                         <div class="mb-3">
                             <label for="direccion_obra" class="form-label">Dirección de obra</label>
                             <textarea class="form-control" id="direccion_obra" name="direccion_obra" rows="2"
-                                required></textarea>
+                                maxlength="200" required></textarea>
+                            <div class="d-flex justify-content-between">
+                                <small id="charCount" class="form-text text-muted">0 / 200 caracteres</small>
+                                <small id="limitMsg" class="form-text text-danger d-none">Límite alcanzado</small>
+                            </div>
                         </div>
+
                         <div class="mb-3">
                             <label for="observaciones" class="form-label">Observaciones</label>
                             <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
@@ -130,4 +135,20 @@
                 <button type="submit" class="btn btn-primary" id="btn-guardar-renta">
                     <i class="bi bi-check2-circle"></i> Guardar Renta
                 </button>
-                <button type="button"
+
+<script>
+  const textarea = document.getElementById('direccion_obra');
+  const charCount = document.getElementById('charCount');
+  const limitMsg = document.getElementById('limitMsg');
+
+  textarea.addEventListener('input', function () {
+    const length = textarea.value.length;
+    charCount.textContent = `${length} / 200 caracteres`;
+
+    if (length >= 200) {
+      limitMsg.classList.remove('d-none');
+    } else {
+      limitMsg.classList.add('d-none');
+    }
+  });
+</script>

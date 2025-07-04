@@ -29,6 +29,17 @@
         </div>
         <div class="row">
           <div class="mb-2 col-md-4">
+            <!-- Selector: ¿Es facturable? -->
+            <div class="form-check">
+              <label for="facturable">¿Requiere facturación?</label>
+              <select id="facturable" name="facturable" class="form-select" required>
+                <option value="">Selecciona una respuesta</option>
+                <option value="1">Sí</option>
+                <option value="0">No</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-2 col-md-4">
             <label for="metodo-pago-pago">Método de pago:</label>
             <select id="metodo-pago-pago" name="metodo_pago" class="form-select" required>
               <option value="efectivo">Efectivo</option>
@@ -43,8 +54,8 @@
             <div>Cambio: $<span id="cambio-pago">0.00</span></div>
           </div>
           <div id="pago-seguimiento-pago" class="col-md-4" style="display:none;">
-            <label for="numero-seguimiento-pago">Número de seguimiento:</label>
-            <input type="text" id="numero-seguimiento-pago" name="numero_seguimiento" class="form-control">
+            <label for="monto-recibido-pago">Monto recibido(colocar precio exacto):</label>
+            <input type="text" id="numero-seguimiento-pago" name="monto_recibido" class="form-control" step="0.001" placeholder="Coloca el monto exacto del pago">
           </div>
         </div>
       </div>

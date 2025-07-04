@@ -113,7 +113,7 @@
               <div class="d-flex actions justify-content-center gap-2">
 
                 <!-- Botón de Acciones -->
-                <div class="dropdown">
+                <div class="dropdown dropup">
                   <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
                     data-bs-toggle="dropdown" aria-expanded="false" title="Acciones">
                     <i class="bi bi-three-dots"></i>
@@ -126,7 +126,7 @@
                 </div>
 
                 <!-- Botón de PDF -->
-                <div class="dropdown">
+                <div class="dropdown dropup">
                   <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
                     data-bs-toggle="dropdown" aria-expanded="false" title="Imprimir PDFs">
                     <i class="bi bi-printer"></i>
@@ -137,7 +137,7 @@
                     <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada</a>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="/prefactura/pdf/{{ renta[0] }}" target="_blank">
+                      <a class="dropdown-item" href="/prefactura/pdf_renta/{{ renta[0] }}" target="_blank">
                         <i class="bi bi-file-earmark-pdf me-2"></i>Prefactura
                       </a>
                     </li>
@@ -145,7 +145,7 @@
                 </div>
 
                 <!-- Botón de Nota -->
-                <div class="dropdown">
+                <div class="dropdown dropup">
                   <button class="btn btn-sm btn-primary text-white dropdown-toggle no-caret rounded rounded-circle"
                     type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Registrar Notas">
                     <i class="bi bi-journal-text"></i>
@@ -161,15 +161,16 @@
                         <i class="bi bi-arrow-left-circle me-2"></i>Nota de Entrada
                       </a>
                     </li>
-                    <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pagado' %}disabled{% endif %}"
+                    <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
                       href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
                       data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
-                      renta[5]|lower=='pagado' %}tabindex="-1" aria-disabled="true" {% endif %}>
+                      renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
                       <i class="bi bi-journal-check me-2"></i>Prefactura
                     </a>
                     </li>
                   </ul>
                 </div>
+
                 <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" type="button"
                   title="Eliminar registro">
                   <i class="bi bi-trash-fill"></i>
