@@ -109,8 +109,9 @@ def crear_nota_salida(renta_id):
         # Insertar nota de salida
         cursor.execute("""
             INSERT INTO notas_salida (folio, renta_id, fecha, numero_referencia, observaciones)
-            VALUES (%s, %s, NOW(), %s, %s)
-        """, (folio, renta_id, numero_referencia, observaciones))
+            VALUES (%s, %s, NOW() - INTERVAL 6 HOUR, %s, %s)
+                       """, (folio, renta_id, numero_referencia, observaciones))
+        
         nota_salida_id = cursor.lastrowid
 
         # Obtener la sucursal de la renta SOLO UNA VEZ

@@ -44,11 +44,15 @@ def obtener_prefactura(renta_id):
     })
 
 
-# === Endpoint: Registrar pago y generar PDF (a implementar) ===
+
+
+
+
+
+
+# === Endpoint: Registrar pago 
 @prefactura_bp.route('/pago/<int:renta_id>', methods=['POST'])
 def registrar_pago_prefactura(renta_id):
-    from datetime import datetime
-
     data = request.get_json()
     tipo = data.get('tipo', 'inicial')
     metodo = data.get('metodo_pago')
@@ -57,42 +61,43 @@ def registrar_pago_prefactura(renta_id):
     cambio = data.get('cambio')
     facturable = data.get('facturable', False)
     numero_seguimiento = data.get('numero_seguimiento')
-    zona_horaria = str(datetime.now().astimezone().tzinfo)
+
+    # DEBUG: Verificar qué valor tiene facturable
+    print(f"DEBUG: facturable recibido = {facturable}, tipo = {type(facturable)}")
+    
+    # Convertir explícitamente a entero para la BD
+    facturable_int = 1 if facturable else 0
+    print(f"DEBUG: facturable_int = {facturable_int}")
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Insertar prefactura
+        # Insertar prefactura con fecha_emision (NOW() toma la fecha/hora local del sistema)
         cursor.execute("""
             INSERT INTO prefacturas (
-                renta_id, tipo, pagada, metodo_pago, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, generada, facturable
-            ) VALUES (%s, %s, 1, %s, %s, %s, %s, %s, %s, %s, 1)
-        """, (
-            renta_id, tipo, metodo, monto, monto_recibido, cambio, numero_seguimiento, zona_horaria, facturable
-        ))
-        prefactura_id = cursor.lastrowid  # Obtener el ID de la prefactura recién creada
+            renta_id, fecha_emision, tipo, pagada, metodo_pago, monto, 
+            monto_recibido, cambio, numero_seguimiento, generada, facturable
+        ) VALUES (%s, NOW() - INTERVAL 6 HOUR, %s, 1, %s, %s, %s, %s, %s, 1, %s)
+""", (
+    renta_id, tipo, metodo.upper(), monto, monto_recibido, cambio, 
+    numero_seguimiento, facturable_int  
+))
+        prefactura_id = cursor.lastrowid
 
         # Actualizar renta
         cursor.execute("""
             UPDATE rentas SET estado_pago='Pago realizado', metodo_pago=%s WHERE id=%s
-        """, (metodo, renta_id))
+        """, (metodo.upper(), renta_id))
+        
         conn.commit()
-
         cursor.close()
         conn.close()
 
         return jsonify({'success': True, 'prefactura_id': prefactura_id})
     except Exception as e:
-        print(e)
+        print(f"Error al registrar prefactura: {e}")
         return jsonify({'success': False, 'error': str(e)})
-
-
-
-
-
-
-
 
 
 
@@ -140,8 +145,12 @@ def generar_pdf_prefactura(prefactura_id):
     can.drawString(65, 685, prefactura['celular'])         # CELULAR
     can.drawString(101, 669, prefactura['metodo_pago'])    # FORMA DE PAGO
     can.drawString(112, 651, f"{prefactura['fecha_salida'].strftime('%d/%m/%Y')} - {prefactura['fecha_entrada'].strftime('%d/%m/%Y') if prefactura['fecha_entrada'] else 'Indefinido'}")  # PERIODO DE RENTA
-    can.drawString(417, 697, prefactura['fecha_emision'].strftime('%d/%m/%Y'))  # FECHA
+    can.drawString(417, 697, prefactura['fecha_emision'].strftime('%d/%m/%Y %H:%M'))  # FECHA Y HORA
     can.drawString(559, 732, f"# {prefactura['folio']}" if 'folio' in prefactura else f"# {prefactura_id}")  # FOLIO de nota)  # FOLIO de nota
+
+
+    facturable_texto = "SÍ" if prefactura['facturable'] else "NO"
+    can.drawString(425, 658, f" {facturable_texto}")  # FACTURABLE
 
     # --- TABLA DE PRODUCTOS ---
     y = 610
