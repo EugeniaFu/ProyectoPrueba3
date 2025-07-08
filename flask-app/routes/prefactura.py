@@ -149,17 +149,18 @@ def generar_pdf_prefactura(prefactura_id):
     pdfmetrics.registerFont(TTFont('Carlito', os.path.join(current_app.root_path, 'static/fonts/Carlito-Regular.ttf')))
 
     # === INFORMACIÓN DEL CLIENTE ===
-    can.setFont("Carlito", 12)
+    can.setFont("Carlito", 10)
     
     # Código y nombre del cliente
-    cliente_codigo_nombre = f"{prefactura['codigo_cliente']} - {prefactura['cliente_nombre']}"
-    can.drawString(62, 695, f"{cliente_codigo_nombre}")
+    cliente_codigo_nombre = f"{prefactura['codigo_cliente']} - {prefactura['cliente_nombre'].upper()}"
+    can.drawString(62, 703, f"{cliente_codigo_nombre}")
     
     # Teléfono
-    can.drawString(69, 671, f"{prefactura['telefono'] or 'No registrado'}")
+    can.drawString(70, 656, f"{prefactura['telefono'] or 'No registrado'}")
     
     # Correo
-    can.drawString(61, 605, f"{prefactura['correo'] or 'No registrado'}")
+    can.drawString(62, 640.5
+                   , f"{prefactura['correo'] or 'No registrado'}")
     
     # Dirección (calle, número y entre calles)
     direccion_completa = prefactura['calle'] or ''
@@ -175,35 +176,34 @@ def generar_pdf_prefactura(prefactura_id):
         direccion_completa += f" - C.P. {prefactura['codigo_postal']}"
 
     
-    can.drawString(73, 649, f"{direccion_completa}")
+    can.drawString(73, 687, f"{direccion_completa.upper()}")
     
     # Estado y Municipio
-    can.drawString(60, 626, f"{prefactura['estado'] or 'No registrado'}")
-    can.drawString(280, 626, f"{prefactura['municipio'] or 'No registrado'}")
+    can.drawString(60, 671, f"{prefactura['estado'] or 'No registrado'.upper()}")
+    can.drawString(290, 671, f"{prefactura['municipio'] or 'No registrado'.upper()}")
     
     # RFC
-    can.drawString(254, 671, f"{prefactura['rfc'] or 'No registrado'}")
+    can.drawString(290, 639.5, f"{prefactura['rfc'] or 'No registrado'.upper()}")
     
     # Facturable
     facturable_texto = "SÍ" if prefactura['facturable'] else "NO"
-    can.drawString(443, 630, f"{facturable_texto}")
+    can.drawString(458, 638.5, f"{facturable_texto}")
     
         # === FECHA Y HORA DE EMISIÓN (HORA DE CAMPECHE) ===
-    can.setFont("Carlito", 9)
+    can.setFont("Carlito", 10)
     # La fecha ya viene en hora de Campeche desde la BD
     fecha_emision = prefactura['fecha_emision']
-    can.drawString(485, 710, f"{fecha_emision.strftime('%d/%m/%Y')}")
-    can.drawString(529, 710, f" - {fecha_emision.strftime('%H:%M:%S')}")
+    can.drawString(482, 708, f"{fecha_emision.strftime('%d/%m/%Y')} - {fecha_emision.strftime('%H:%M:%S')}")
     
     # Folio
     can.setFont("Carlito", 10)
-    can.drawString(572, 725, f"#{prefactura_id}")
+    can.drawString(564, 725, f"#{prefactura_id}")
 
     # === TABLA DE PRODUCTOS ===
     can.setFont("Carlito", 10)
     
     # Datos de productos
-    y = 550
+    y = 605
     subtotal_general = 0
     
     for item in detalles:
@@ -222,9 +222,9 @@ def generar_pdf_prefactura(prefactura_id):
 
         # === LÍNEA DIVISORA Y TOTALES ===
     y -= 15
-    can.line(28, y+10, 585, y+10)  # Línea separadora
+    can.line(28, y+15, 585, y+15)  # Línea separadora
 
-    espacio_3mm = 13
+    espacio_3mm = 10
     can.setFont("Carlito", 11)
     y_totales = y + 10 - espacio_3mm  # 3mm debajo de la línea
 
@@ -263,7 +263,8 @@ def generar_pdf_prefactura(prefactura_id):
     # === MÉTODO DE PAGO (DEBAJO DEL TOTAL) ===
     y_totales -= 15
     can.setFont("Carlito", 11)
-    can.drawString(400, y_totales, f"MÉTODO/PAGO: {prefactura['metodo_pago']}")
+    can.drawString(400, y_totales, "MÉTODO/PAGO:")
+    can.drawRightString(570, y_totales, f"{prefactura['metodo_pago']}")
 
     # === TOTAL EN LETRAS (AL LADO IZQUIERDO) ===
     monto = prefactura['monto']
@@ -280,16 +281,16 @@ def generar_pdf_prefactura(prefactura_id):
    
 
     # === AVISOS IMPORTANTES PARA EL CLIENTE ===
-    y_avisos = y_totales - 25  # Más espacio entre totales y avisos
+    y_avisos = y_totales - 10  # Más espacio entre totales y avisos
 
     # Línea separadora para los avisos
-    can.line(28, y_avisos + 10, 585, y_avisos + 10)
+    can.line(28, y_avisos + 5, 585, y_avisos + 5)
     y_avisos -= 5
 
     # REQUISITOS DE CLIENTE
     can.setFont("Helvetica-Bold", 10)
     can.drawString(60, y_avisos, "REQUISITOS DE CLIENTE:")
-    y_avisos -= 15
+    y_avisos -= 12
 
     can.setFont("Helvetica", 8)
     can.drawString(60, y_avisos, "LOS SIGUIENTES DOCUMENTOS PUEDEN SER EN IMAGEN O EN COPIA IMPRESA:")
@@ -302,36 +303,30 @@ def generar_pdf_prefactura(prefactura_id):
     y_avisos -= 10
 
     can.drawString(70, y_avisos, "• COMPROBANTE DE DOMICILIO.")
-    y_avisos -= 20
+    y_avisos -= 15
 
     # REQUISITOS DE RENTA
     can.setFont("Helvetica-Bold", 10)
     can.drawString(60, y_avisos, "REQUISITOS DE RENTA:")
-    y_avisos -= 15
+    y_avisos -= 11
 
     can.setFont("Helvetica", 8)
     can.drawString(70, y_avisos, "• SE REQUIERE EL PAGO COMPLETO POR ADELANTADO DE LA RENTA.")
     y_avisos -= 10
 
     can.drawString(70, y_avisos, "• UBICACIÓN EXACTA DE LA OBRA (POR GOOGLE MAPS)")
-    y_avisos -= 20
+    y_avisos -= 15
 
     # ¡IMPORTANTE!
     can.setFont("Helvetica-Bold", 10)
     can.drawString(60, y_avisos, "¡IMPORTANTE!")
-    y_avisos -= 15
+    y_avisos -= 11
 
     can.setFont("Helvetica", 8)
     can.drawString(70, y_avisos, "• EL PERIODO DE RENTA INCLUYE DOMINGOS, DÍAS INHÁBILES Y FESTIVOS.")
     y_avisos -= 10
 
     can.drawString(70, y_avisos, "• NO SE ARMA, NI SE DESARMA EL EQUIPO.")
-
-
-
-
-
-
 
 
     # Guardar el canvas
