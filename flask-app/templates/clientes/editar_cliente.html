@@ -9,27 +9,28 @@
 {% block content %}
 <div class="container py-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2" role="alert">
-              {{ message }}
-            </div>
-          {% endfor %}
+    {% if messages %}
+    <div id="notificaciones" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show mb-2"
+            role="alert">
+            {{ message }}
         </div>
-        <script>
-          setTimeout(function() {
-            document.querySelectorAll('#notificaciones .alert').forEach(function(alert) {
-              alert.classList.remove('show');
-              alert.classList.add('hide');
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('#notificaciones .alert').forEach(function (alert) {
+                alert.classList.remove('show');
+                alert.classList.add('hide');
             });
-          }, 3000);
-          setTimeout(function() {
+        }, 3000);
+        setTimeout(function () {
             var notificaciones = document.getElementById('notificaciones');
             if (notificaciones) notificaciones.remove();
-          }, 3500);
-        </script>
-      {% endif %}
+        }, 3500);
+    </script>
+    {% endif %}
     {% endwith %}
     <a href="{{ url_for('clientes.clientes') }}" class="btn btn-outline-secondary mb-3">
         <i class="bi bi-arrow-left"></i> Regresar
@@ -46,20 +47,75 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Nombres *</label>
-                                    <input type="text" class="form-control" name="nombre" value="{{ cliente.nombre }}" required>
+                                    <input type="text" class="form-control" name="nombre" value="{{ cliente.nombre }}"
+                                        required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Primer Apellido *</label>
-                                    <input type="text" class="form-control" name="apellido1" value="{{ cliente.apellido1 }}" required>
+                                    <input type="text" class="form-control" name="apellido1"
+                                        value="{{ cliente.apellido1 }}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Segundo Apellido *</label>
-                                    <input type="text" class="form-control" name="apellido2" value="{{ cliente.apellido2 }}" required>
+                                    <input type="text" class="form-control" name="apellido2"
+                                        value="{{ cliente.apellido2 }}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Teléfono *</label>
-                                    <input type="text" class="form-control" name="telefono" value="{{ cliente.telefono }}" required>
+                                    <input type="text" class="form-control" name="telefono"
+                                        value="{{ cliente.telefono }}" required>
                                 </div>
+
+                                <!-- SECCIÓN DE DIRECCIÓN -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Dirección *</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button type="button" class="btn btn-outline-primary"
+                                            id="btnAbrirDireccionEditar">
+                                            <i class="bi bi-geo-alt"></i>
+                                            {% if cliente.calle %}Editar Dirección{% else %}Agregar Dirección{% endif %}
+                                        </button>
+                                        <span
+                                            class="badge {% if cliente.calle %}bg-success{% else %}bg-secondary{% endif %}"
+                                            id="estadoDireccionEditar">
+                                            {% if cliente.calle %}Dirección registrada{% else %}Sin dirección{% endif %}
+                                        </span>
+                                    </div>
+                                    <div id="resumenDireccionEditar" class="mt-2 p-2 bg-light rounded" {% if not
+                                        cliente.calle %}style="display: none;" {% endif %}>
+                                        <small class="text-muted">
+                                            <strong>Dirección:</strong><br>
+                                            <span id="direccionCompletaEditar">
+                                                {% if cliente.calle %}
+                                                {{ cliente.calle }}{% if cliente.entre_calles %} (entre {{
+                                                cliente.entre_calles }}){% endif %} {{ cliente.numero_exterior }}{% if
+                                                cliente.numero_interior %}, Int. {{ cliente.numero_interior }}{% endif
+                                                %}, {{ cliente.colonia }}, CP {{ cliente.codigo_postal }}, {{
+                                                cliente.municipio }}, {{ cliente.estado }}
+                                                {% endif %}
+                                            </span>
+                                        </small>
+                                    </div>
+
+                                    <!-- Campos ocultos para enviar al servidor -->
+                                    <input type="hidden" name="calle" id="hidden_calle_editar"
+                                        value="{{ cliente.calle or '' }}">
+                                    <input type="hidden" name="entre_calles" id="hidden_entre_calles_editar"
+                                        value="{{ cliente.entre_calles or '' }}">
+                                    <input type="hidden" name="numero_exterior" id="hidden_numero_exterior_editar"
+                                        value="{{ cliente.numero_exterior or '' }}">
+                                    <input type="hidden" name="numero_interior" id="hidden_numero_interior_editar"
+                                        value="{{ cliente.numero_interior or '' }}">
+                                    <input type="hidden" name="colonia" id="hidden_colonia_editar"
+                                        value="{{ cliente.colonia or '' }}">
+                                    <input type="hidden" name="codigo_postal" id="hidden_codigo_postal_editar"
+                                        value="{{ cliente.codigo_postal or '' }}">
+                                    <input type="hidden" name="municipio" id="hidden_municipio_editar"
+                                        value="{{ cliente.municipio or '' }}">
+                                    <input type="hidden" name="estado" id="hidden_estado_editar"
+                                        value="{{ cliente.estado or '' }}">
+                                </div>
+
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Correo electrónico</label>
                                     <input type="email" class="form-control" name="correo" value="{{ cliente.correo }}">
@@ -71,12 +127,16 @@
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Estatus *</label>
                                     <select class="form-select" name="tipo_cliente" required>
-                                        <option value="frecuente" {% if cliente.tipo_cliente=='frecuente' %}selected{% endif %}>Frecuente</option>
-                                        <option value="ocasional" {% if cliente.tipo_cliente=='ocasional' %}selected{% endif %}>Ocasional</option>
-                                        <option value="betado" {% if cliente.tipo_cliente=='betado' %}selected{% endif %}>Betado</option>
+                                        <option value="frecuente" {% if cliente.tipo_cliente=='frecuente' %}selected{%
+                                            endif %}>Frecuente</option>
+                                        <option value="ocasional" {% if cliente.tipo_cliente=='ocasional' %}selected{%
+                                            endif %}>Ocasional</option>
+                                        <option value="betado" {% if cliente.tipo_cliente=='betado' %}selected{% endif
+                                            %}>Betado</option>
                                     </select>
                                 </div>
                             </div>
+
                             <!-- Columna 2: Documentos -->
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -85,9 +145,12 @@
                                         {% for doc in documentos %}
                                         <div class="list-group-item d-flex align-items-center justify-content-between">
                                             <div style="max-width: 220px; overflow: hidden;">
-                                                <a href="{{ url_for('static', filename='uploads/clientes/' ~ doc.archivo) }}" target="_blank" style="text-decoration:none;">
+                                                <a href="{{ url_for('static', filename='uploads/clientes/' ~ doc.archivo) }}"
+                                                    target="_blank" style="text-decoration:none;">
                                                     <i class="bi bi-file-earmark-pdf text-danger"></i>
-                                                    <span class="fw-bold text-truncate" style="max-width: 160px; display: inline-block; vertical-align: middle;" title="{{ doc.archivo }}">
+                                                    <span class="fw-bold text-truncate"
+                                                        style="max-width: 160px; display: inline-block; vertical-align: middle;"
+                                                        title="{{ doc.archivo }}">
                                                         {{ doc.tipo_documento|capitalize }} - {{ doc.archivo }}
                                                     </span>
                                                 </a>
@@ -102,61 +165,181 @@
                                         {% endfor %}
                                     </div>
                                 </div>
+
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Agregar nuevos documentos</label>
-                                    <input class="form-control mb-2" type="file" id="documentos" accept=".pdf,.jpg,.jpeg,.png" multiple>
-                                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG. Puedes seleccionar varios archivos.</small>
+                                    <input class="form-control mb-2" type="file" id="documentos" name="documentos"
+                                        accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG.</small>
                                     <div id="previewDocs" class="mt-3"></div>
+                                </div>
+
+                                <!-- SECCIÓN: CÁMARA PARA TOMAR FOTOS -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tomar foto de documento</label><br>
+                                    <video id="video" width="280" height="200" autoplay style="display:none;"></video>
+                                    <canvas id="canvas" width="280" height="200" style="display:none;"></canvas>
+                                    <button type="button" id="btnCamara" class="btn btn-secondary mb-2">
+                                        <i class="bi bi-camera"></i> Activar cámara
+                                    </button>
+                                    <button type="button" id="btnFoto" class="btn btn-primary mb-2"
+                                        style="display:none;">
+                                        <i class="bi bi-camera-fill"></i> Tomar foto
+                                    </button>
+                                    <input type="hidden" name="foto_documento" id="foto_documento">
+                                    <img id="previewFoto" src="" style="max-width:100%; display:none;" />
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <small>Puedes agregar INE, Licencia, Comprobante de domicilio o cualquier documento
+                                        relevante.</small>
                                 </div>
                             </div>
                         </div>
+
                         <div class="text-end mt-3">
                             <button type="submit" class="btn btn-danger btn-lg px-5 fw-bold">
                                 <i class="bi bi-save"></i> Guardar Cambios
                             </button>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
+
+<!-- MODAL DE DIRECCIÓN PARA EDITAR -->
+<div class="modal fade" id="modalDireccionEditar" tabindex="-1" aria-labelledby="modalDireccionEditarLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDireccionEditarLabel">
+                    <i class="bi bi-geo-alt"></i> Dirección del Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Calle *</label>
+                    <input type="text" class="form-control" id="modal_calle_editar" value="{{ cliente.calle or '' }}"
+                        required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Entre calles</label>
+                    <input type="text" class="form-control" id="modal_entre_calles_editar"
+                        value="{{ cliente.entre_calles or '' }}"
+                        placeholder="Ej: Entre Calle 5 de Mayo y Calle Morelos">
+                    <small class="text-muted">Opcional - Calles de referencia para ubicar mejor el domicilio</small>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Número Exterior *</label>
+                        <input type="text" class="form-control" id="modal_numero_exterior_editar"
+                            value="{{ cliente.numero_exterior or '' }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Número Interior</label>
+                        <input type="text" class="form-control" id="modal_numero_interior_editar"
+                            value="{{ cliente.numero_interior or '' }}">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Código Postal *</label>
+                        <input type="text" class="form-control" id="modal_codigo_postal_editar"
+                            value="{{ cliente.codigo_postal or '' }}" maxlength="5" pattern="[0-9]{5}" required>
+                        <small class="text-muted" id="modal_cp_status_editar">Ingresa 5 dígitos</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Colonia *</label>
+                        <input type="text" class="form-control" id="modal_colonia_editar"
+                            value="{{ cliente.colonia or '' }}" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Municipio *</label>
+                        <input type="text" class="form-control" id="modal_municipio_editar"
+                            value="{{ cliente.municipio or '' }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Estado *</label>
+                        <input type="text" class="form-control" id="modal_estado_editar"
+                            value="{{ cliente.estado or '' }}" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarDireccionEditar">
+                    <i class="bi bi-check-lg"></i> Guardar Dirección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 {% block scripts %}
 <script>
-let archivosSeleccionados = [];
+    // ========================================
+    // VARIABLES GLOBALES
+    // ========================================
+    let archivosSeleccionados = [];
+    let direccionCompletaEditar = {% if cliente.calle %}true{% else %} false{% endif %};
 
-document.getElementById('documentos').addEventListener('change', function (e) {
-    for (let file of e.target.files) {
-        archivosSeleccionados.push({ file, tipo: 'otro' });
-    }
-    e.target.value = '';
-    renderPreview();
-});
+    // ========================================
+    // FUNCIONALIDAD DE DOCUMENTOS Y ARCHIVOS
+    // ========================================
 
-function renderPreview() {
-    const preview = document.getElementById('previewDocs');
-    preview.innerHTML = '';
-    if (archivosSeleccionados.length === 0) {
-        preview.innerHTML = '<small class="text-muted">No hay archivos seleccionados.</small>';
-        return;
-    }
-    archivosSeleccionados.forEach((item, idx) => {
-        let icon = '';
-        if (item.file.type === 'application/pdf') {
-            icon = '<i class="bi bi-file-earmark-pdf text-danger" style="font-size:2rem;"></i>';
-        } else if (item.file.type.startsWith('image/')) {
-            icon = '<i class="bi bi-file-earmark-image text-primary" style="font-size:2rem;"></i>';
-        } else {
-            icon = '<i class="bi bi-file-earmark" style="font-size:2rem;"></i>';
+    document.getElementById('documentos').addEventListener('change', function (e) {
+        for (let file of e.target.files) {
+            archivosSeleccionados.push({ file, tipo: 'otro' });
         }
-        const size = (item.file.size / 1024 / 1024).toFixed(2) + ' MB';
-        const url = URL.createObjectURL(item.file);
-        preview.innerHTML += `
+        e.target.value = '';
+        renderPreview();
+    });
+
+    function renderPreview() {
+        const preview = document.getElementById('previewDocs');
+        preview.innerHTML = '';
+        if (archivosSeleccionados.length === 0) {
+            preview.innerHTML = '<small class="text-muted">No hay archivos seleccionados.</small>';
+            return;
+        }
+        archivosSeleccionados.forEach((item, idx) => {
+            let icon = '';
+            if (item.file.type === 'application/pdf') {
+                icon = '<i class="bi bi-file-earmark-pdf text-danger" style="font-size:2rem;"></i>';
+            } else if (item.file.type.startsWith('image/')) {
+                icon = '<i class="bi bi-file-earmark-image text-primary" style="font-size:2rem;"></i>';
+            } else {
+                icon = '<i class="bi bi-file-earmark" style="font-size:2rem;"></i>';
+            }
+            const size = (item.file.size / 1024 / 1024).toFixed(2) + ' MB';
+            const url = URL.createObjectURL(item.file);
+            preview.innerHTML += `
             <div class="d-flex align-items-center border rounded p-2 mb-2" style="background:#f8fafc;">
                 ${icon}
                 <div class="ms-3 flex-grow-1">
@@ -178,42 +361,228 @@ function renderPreview() {
                 </button>
             </div>
         `;
-    });
-}
+        });
+    }
 
-function cambiarTipoDoc(idx, tipo) {
-    archivosSeleccionados[idx].tipo = tipo;
-}
+    function cambiarTipoDoc(idx, tipo) {
+        archivosSeleccionados[idx].tipo = tipo;
+    }
 
-function eliminarArchivo(idx) {
-    archivosSeleccionados.splice(idx, 1);
-    renderPreview();
-}
+    function eliminarArchivo(idx) {
+        archivosSeleccionados.splice(idx, 1);
+        renderPreview();
+    }
 
-document.getElementById('formEditarCliente').addEventListener('submit', function (e) {
-    // Si no hay archivos nuevos, deja que el form se envíe normalmente
-    if (archivosSeleccionados.length === 0) return;
+    // ========================================
+    // FUNCIONALIDAD DE CÁMARA
+    // ========================================
 
-    const form = e.target;
-    const formData = new FormData(form);
-    archivosSeleccionados.forEach((item, idx) => {
-        formData.append('documentos', item.file);
-        formData.append(`tipo_documento_${idx}`, item.tipo);
-    });
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let btnCamara = document.getElementById('btnCamara');
+    let btnFoto = document.getElementById('btnFoto');
+    let previewFoto = document.getElementById('previewFoto');
+    let fotoInput = document.getElementById('foto_documento');
+    let stream = null;
 
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    }).then(response => {
-        if (response.redirected) {
-            window.location.href = response.url;
-        } else {
-            response.text().then(html => {
-                document.body.innerHTML = html;
+    btnCamara.onclick = async function () {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.style.display = 'block';
+            btnFoto.style.display = 'inline-block';
+            btnCamara.textContent = 'Cámara activa';
+            btnCamara.disabled = true;
+        } catch (error) {
+            alert('Error al acceder a la cámara: ' + error.message);
+        }
+    };
+
+    btnFoto.onclick = function () {
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        let dataUrl = canvas.toDataURL('image/png');
+
+        fetch(dataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+                let file = new File([blob], "foto_documento.png", { type: "image/png" });
+                archivosSeleccionados.push({ file, tipo: 'ine' });
+                renderPreview();
             });
+
+        previewFoto.src = dataUrl;
+        previewFoto.style.display = 'block';
+        fotoInput.value = dataUrl;
+        video.style.display = 'none';
+        btnFoto.style.display = 'none';
+        btnCamara.textContent = 'Activar cámara';
+        btnCamara.disabled = false;
+
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    };
+
+    // ========================================
+    // FUNCIONALIDAD DEL MODAL DE DIRECCIÓN PARA EDITAR
+    // ========================================
+
+    // Botón para abrir modal de dirección
+    document.getElementById('btnAbrirDireccionEditar').addEventListener('click', function () {
+        const modal = new bootstrap.Modal(document.getElementById('modalDireccionEditar'));
+        modal.show();
+    });
+
+    // Autocompletado por código postal en editar
+    const modalCpInputEditar = document.getElementById('modal_codigo_postal_editar');
+    const modalCpStatusEditar = document.getElementById('modal_cp_status_editar');
+
+    let timeoutIdEditar;
+
+    // Completar después de modalCpInputEditar.addEventListener:
+    modalCpInputEditar.addEventListener('input', function () {
+        const cp = this.value.replace(/\D/g, ''); // Solo números
+        this.value = cp;
+
+        modalCpStatusEditar.textContent = 'Ingresa 5 dígitos';
+        modalCpStatusEditar.className = 'text-muted';
+
+        // Cancelar búsqueda anterior
+        clearTimeout(timeoutIdEditar);
+
+        if (cp.length === 5) {
+            modalCpStatusEditar.textContent = 'Consultando...';
+            modalCpStatusEditar.className = 'text-info';
+
+            // Esperar 500ms antes de hacer la consulta
+            timeoutIdEditar = setTimeout(() => {
+                buscarColoniasPorCPEditar(cp);
+            }, 500);
         }
     });
-    e.preventDefault();
-});
+
+    async function buscarColoniasPorCPEditar(cp) {
+        try {
+            const response = await fetch(`/clientes/api/colonias/${cp}`);
+            const data = await response.json();
+
+            if (data.success) {
+                // Llenar estado y municipio
+                document.getElementById('modal_estado_editar').value = data.estado;
+                document.getElementById('modal_municipio_editar').value = data.municipio;
+
+                modalCpStatusEditar.textContent = `Datos encontrados para CP ${cp}`;
+                modalCpStatusEditar.className = 'text-success';
+
+            } else {
+                modalCpStatusEditar.textContent = 'CP no encontrado - Mantén los datos actuales';
+                modalCpStatusEditar.className = 'text-warning';
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            modalCpStatusEditar.textContent = 'Error de conexión - Mantén los datos actuales';
+            modalCpStatusEditar.className = 'text-danger';
+        }
+    }
+
+    // Guardar dirección desde el modal
+    document.getElementById('btnGuardarDireccionEditar').addEventListener('click', function () {
+        const calle = document.getElementById('modal_calle_editar').value.trim();
+        const entreCalles = document.getElementById('modal_entre_calles_editar').value.trim();
+        const numeroExterior = document.getElementById('modal_numero_exterior_editar').value.trim();
+        const numeroInterior = document.getElementById('modal_numero_interior_editar').value.trim();
+        const colonia = document.getElementById('modal_colonia_editar').value.trim();
+        const codigoPostal = document.getElementById('modal_codigo_postal_editar').value.trim();
+        const municipio = document.getElementById('modal_municipio_editar').value.trim();
+        const estado = document.getElementById('modal_estado_editar').value.trim();
+
+        // Validar campos obligatorios
+        if (!calle || !numeroExterior || !colonia || !codigoPostal || !municipio || !estado) {
+            alert('Por favor, completa todos los campos obligatorios de la dirección.');
+            return;
+        }
+
+        // Guardar en campos ocultos
+        document.getElementById('hidden_calle_editar').value = calle;
+        document.getElementById('hidden_entre_calles_editar').value = entreCalles;
+        document.getElementById('hidden_numero_exterior_editar').value = numeroExterior;
+        document.getElementById('hidden_numero_interior_editar').value = numeroInterior;
+        document.getElementById('hidden_colonia_editar').value = colonia;
+        document.getElementById('hidden_codigo_postal_editar').value = codigoPostal;
+        document.getElementById('hidden_municipio_editar').value = municipio;
+        document.getElementById('hidden_estado_editar').value = estado;
+
+        // Mostrar resumen en el formulario principal
+        let direccionTexto = `${calle}${entreCalles ? ' (entre ' + entreCalles + ')' : ''} ${numeroExterior}${numeroInterior ? ', Int. ' + numeroInterior : ''}, ${colonia}, CP ${codigoPostal}, ${municipio}, ${estado}`;
+
+        document.getElementById('direccionCompletaEditar').textContent = direccionTexto;
+        document.getElementById('resumenDireccionEditar').style.display = 'block';
+        document.getElementById('estadoDireccionEditar').textContent = 'Dirección actualizada';
+        document.getElementById('estadoDireccionEditar').className = 'badge bg-success';
+
+        direccionCompletaEditar = true;
+
+        // Cerrar modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalDireccionEditar'));
+        modal.hide();
+    });
+
+    // ========================================
+    // VALIDACIÓN Y ENVÍO DEL FORMULARIO
+    // ========================================
+
+    document.getElementById('formEditarCliente').addEventListener('submit', function (e) {
+        // Validar dirección
+        if (!direccionCompletaEditar) {
+            e.preventDefault();
+            alert('Por favor, completa la dirección del cliente antes de guardar.');
+            return false;
+        }
+
+        // Si no hay archivos nuevos, deja que el form se envíe normalmente
+        if (archivosSeleccionados.length === 0) return;
+
+        e.preventDefault();
+
+        const form = e.target;
+        const btn = document.querySelector('button[type="submit"]');
+
+        // Deshabilitar botón y mostrar spinner
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        }
+
+        const formData = new FormData(form);
+        archivosSeleccionados.forEach((item, idx) => {
+            formData.append('documentos', item.file);
+            formData.append(`tipo_documento_${idx}`, item.tipo);
+        });
+
+        fetch(form.action, {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                response.text().then(html => {
+                    document.body.innerHTML = html;
+                });
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            alert('Error al enviar el formulario. Por favor, intenta de nuevo.');
+
+            // Rehabilitar botón
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save"></i> Guardar Cambios';
+            }
+        });
+    });
+
+
 </script>
 {% endblock %}

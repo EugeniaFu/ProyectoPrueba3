@@ -14,6 +14,9 @@
 </style>
 {% endblock %}
 
+
+
+
 {% block content %}
 <div class="container py-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -62,22 +65,57 @@
                         </li>
                     </ul>
                     <div class="tab-content">
+
                         <!-- Información -->
                         <div class="tab-pane fade show active" id="info" role="tabpanel">
                             <dl class="row">
                                 <dt class="col-sm-4">Número de Cliente:</dt>
                                 <dd class="col-sm-8">{{ cliente.codigo_cliente }}</dd>
+
                                 <dt class="col-sm-4">Nombre:</dt>
                                 <dd class="col-sm-8">{{ cliente.nombre }} {{ cliente.apellido1 }} {{ cliente.apellido2
                                     }}</dd>
+
                                 <dt class="col-sm-4">Teléfono:</dt>
                                 <dd class="col-sm-8">{{ cliente.telefono }}</dd>
+
                                 <dt class="col-sm-4">Correo:</dt>
                                 <dd class="col-sm-8">{{ cliente.correo or '-' }}</dd>
+
                                 <dt class="col-sm-4">RFC:</dt>
                                 <dd class="col-sm-8">{{ cliente.rfc or '-' }}</dd>
+
+                                <!-- NUEVA SECCIÓN DE DIRECCIÓN -->
+                                <dt class="col-sm-4">Dirección:</dt>
+                                <dd class="col-sm-8">
+                                    {% if cliente.calle %}
+                                    <div class="text-muted small">
+                                        <strong>{{ cliente.calle }}
+                                            {% if cliente.entre_calles %}(entre {{ cliente.entre_calles }}){% endif %}
+                                            {{ cliente.numero_exterior }}{% if cliente.numero_interior %}, Int. {{
+                                            cliente.numero_interior }}{% endif %}
+                                        </strong><br>
+                                        {{ cliente.colonia }}, CP {{ cliente.codigo_postal }}<br>
+                                        {{ cliente.municipio }}, {{ cliente.estado }}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">Sin dirección registrada</span>
+                                    {% endif %}
+                                </dd>
+
                                 <dt class="col-sm-4">Sucursal:</dt>
                                 <dd class="col-sm-8">{{ cliente.sucursal_nombre or '-' }}</dd>
+
+                                <!-- NUEVO: ROL DEL CLIENTE -->
+                                <dt class="col-sm-4">Rol:</dt>
+                                <dd class="col-sm-8">
+                                    {% if cliente.rol_nombre %}
+                                    <span class="badge bg-info">{{ cliente.rol_nombre|title }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Sin rol asignado</span>
+                                    {% endif %}
+                                </dd>
+
                                 <dt class="col-sm-4">Estatus:</dt>
                                 <dd class="col-sm-8">
                                     {% if cliente.tipo_cliente == 'frecuente' %}
@@ -90,10 +128,12 @@
                                     <span class="badge bg-secondary">Desconocido</span>
                                     {% endif %}
                                 </dd>
+
                                 <dt class="col-sm-4">Fecha de alta:</dt>
                                 <dd class="col-sm-8">{{ cliente.fecha_alta.strftime('%d/%m/%Y') if cliente.fecha_alta
                                     else '-' }}</dd>
                             </dl>
+
                             <div class="text-end">
                                 <a href="{{ url_for('clientes.editar_cliente', id=cliente.id) }}"
                                     class="btn btn-danger fw-bold">

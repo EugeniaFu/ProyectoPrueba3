@@ -105,18 +105,27 @@ def registrar_pago_prefactura(renta_id):
 
 
 
-
 @prefactura_bp.route('/pdf/<int:prefactura_id>')
 def generar_pdf_prefactura(prefactura_id):
-    # --- OBTENER DATOS DE LA BD ---
+    # --- OBTENER DATOS COMPLETOS DEL CLIENTE ---
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
         SELECT p.*, r.fecha_entrada, r.fecha_salida, r.direccion_obra, r.metodo_pago, r.iva,
-                   r.traslado, r.costo_traslado,
+               r.traslado, r.costo_traslado,
                CONCAT(c.nombre, ' ', c.apellido1, ' ', c.apellido2) AS cliente_nombre,
-               c.telefono AS celular,
-               c.codigo_cliente
+               c.codigo_cliente,
+               c.telefono,
+               c.correo,
+               c.calle,
+               c.numero_exterior,
+               c.numero_interior,
+               c.entre_calles,
+               c.colonia,
+               c.codigo_postal,    
+               c.municipio,
+               c.estado,
+               c.rfc
         FROM prefacturas p
         JOIN rentas r ON p.renta_id = r.id
         JOIN clientes c ON r.cliente_id = c.id
@@ -139,34 +148,124 @@ def generar_pdf_prefactura(prefactura_id):
     can = canvas.Canvas(packet, pagesize=letter)
     pdfmetrics.registerFont(TTFont('Carlito', os.path.join(current_app.root_path, 'static/fonts/Carlito-Regular.ttf')))
 
-    # Ajusta las posiciones X, Y según tu plantilla
-    can.setFont("Carlito", 13)
-    can.drawString(65, 701, prefactura['cliente_nombre'])  # NOMBRE
-    can.drawString(65, 685, prefactura['celular'])         # CELULAR
-    can.drawString(101, 669, prefactura['metodo_pago'])    # FORMA DE PAGO
-    can.drawString(112, 651, f"{prefactura['fecha_salida'].strftime('%d/%m/%Y')} - {prefactura['fecha_entrada'].strftime('%d/%m/%Y') if prefactura['fecha_entrada'] else 'Indefinido'}")  # PERIODO DE RENTA
-    can.drawString(417, 697, prefactura['fecha_emision'].strftime('%d/%m/%Y %H:%M'))  # FECHA Y HORA
-    can.drawString(559, 732, f"# {prefactura['folio']}" if 'folio' in prefactura else f"# {prefactura_id}")  # FOLIO de nota)  # FOLIO de nota
+    # === INFORMACIÓN DEL CLIENTE ===
+    can.setFont("Carlito", 12)
+    
+    # Código y nombre del cliente
+    cliente_codigo_nombre = f"{prefactura['codigo_cliente']} - {prefactura['cliente_nombre']}"
+    can.drawString(62, 695, f"{cliente_codigo_nombre}")
+    
+    # Teléfono
+    can.drawString(69, 671, f"{prefactura['telefono'] or 'No registrado'}")
+    
+    # Correo
+    can.drawString(61, 605, f"{prefactura['correo'] or 'No registrado'}")
+    
+    # Dirección (calle, número y entre calles)
+    direccion_completa = prefactura['calle'] or ''
+    if prefactura['numero_exterior']:
+        direccion_completa += f" {prefactura['numero_exterior']}"
+    if prefactura['numero_interior']:
+        direccion_completa += f", Int. {prefactura['numero_interior']}"
+    if prefactura['entre_calles']:
+        direccion_completa += f" (entre {prefactura['entre_calles']})"
+    if prefactura['colonia']:
+        direccion_completa += f", COL. {prefactura['colonia']}"
+    if prefactura['codigo_postal']:
+        direccion_completa += f" - C.P. {prefactura['codigo_postal']}"
 
-
+    
+    can.drawString(73, 649, f"{direccion_completa}")
+    
+    # Estado y Municipio
+    can.drawString(60, 626, f"{prefactura['estado'] or 'No registrado'}")
+    can.drawString(280, 626, f"{prefactura['municipio'] or 'No registrado'}")
+    
+    # RFC
+    can.drawString(254, 671, f"{prefactura['rfc'] or 'No registrado'}")
+    
+    # Facturable
     facturable_texto = "SÍ" if prefactura['facturable'] else "NO"
-    can.drawString(425, 658, f" {facturable_texto}")  # FACTURABLE
+    can.drawString(443, 630, f"{facturable_texto}")
+    
+        # === FECHA Y HORA DE EMISIÓN (HORA DE CAMPECHE) ===
+    can.setFont("Carlito", 9)
+    # La fecha ya viene en hora de Campeche desde la BD
+    fecha_emision = prefactura['fecha_emision']
+    can.drawString(485, 710, f"{fecha_emision.strftime('%d/%m/%Y')}")
+    can.drawString(529, 710, f" - {fecha_emision.strftime('%H:%M:%S')}")
+    
+    # Folio
+    can.setFont("Carlito", 10)
+    can.drawString(572, 725, f"#{prefactura_id}")
 
-    # --- TABLA DE PRODUCTOS ---
-    y = 610
-    can.setFont("Carlito", 13)
-    subtotal_general = 0  # Suma de subtotales de productos
+    # === TABLA DE PRODUCTOS ===
+    can.setFont("Carlito", 10)
+    
+    # Datos de productos
+    y = 550
+    subtotal_general = 0
+    
     for item in detalles:
-        can.drawString(60, y, item['nombre'])  # DESCRIPCIÓN
-        can.drawRightString(354, y, str(item['cantidad']))  # CANT.
-        can.drawRightString(407, y, str(item['dias_renta']))  # DÍAS
-        can.drawRightString(506, y, f"${item['costo_unitario']:.2f}")  # COSTO
-        can.drawRightString(588, y, f"${item['subtotal']:.2f}")  # SUBTOTAL
+        can.drawString(50, y, item['nombre'][:40])  # Limitar longitud del nombre
+        can.drawRightString(347, y, str(item['cantidad']))
+        can.drawRightString(405, y, str(item['dias_renta'] or 'N/A'))
+        can.drawRightString(495, y, f"${item['costo_unitario']:.2f}")
+        can.drawRightString(570, y, f"${item['subtotal']:.2f}")
+        
         subtotal_general += float(item['subtotal'])
         y -= 18
+        
+        # Si hay muchos productos, crear nueva página o ajustar
+        if y < 300:
+            break
 
-    # --- TOTALES ---
+        # === LÍNEA DIVISORA Y TOTALES ===
+    y -= 15
+    can.line(28, y+10, 585, y+10)  # Línea separadora
+
+    espacio_3mm = 13
     can.setFont("Carlito", 11)
+    y_totales = y + 10 - espacio_3mm  # 3mm debajo de la línea
+
+    # PERÍODO DE RENTA (AL LADO IZQUIERDO DEL SUBTOTAL)
+    periodo_renta = f"{prefactura['fecha_salida'].strftime('%d/%m/%Y')}"
+    if prefactura['fecha_entrada']:
+        periodo_renta += f" - {prefactura['fecha_entrada'].strftime('%d/%m/%Y')}"
+    else:
+        periodo_renta += " - Indefinido"
+    can.setFont("Carlito", 10)
+    can.drawString(60, y_totales, f"PERIODO DE RENTA: {periodo_renta}")
+
+    # Subtotal de productos (AL LADO DERECHO)
+    can.setFont("Carlito", 11)
+    can.drawString(400, y_totales, "SUBTOTAL:")
+    can.drawRightString(570, y_totales, f"${subtotal_general:.2f}")
+    y_totales -= 15
+
+    # Traslado
+    traslado_tipo = prefactura.get('traslado', 'ninguno')
+    costo_traslado = prefactura.get('costo_traslado', 0)
+    can.drawString(400, y_totales, f"TRASLADO ({traslado_tipo}):")
+    can.drawRightString(570, y_totales, f"${costo_traslado:.2f}")
+    y_totales -= 15
+
+    # IVA
+    can.drawString(400, y_totales, "IVA (16%):")
+    can.drawRightString(570, y_totales, f"${prefactura['iva']:.2f}")
+    y_totales -= 20
+
+    # Total final
+    can.setFont("Helvetica-Bold", 11)
+    can.drawString(400, y_totales, "TOTAL:")
+    can.drawRightString(570, y_totales, f"${prefactura['monto']:.2f}")
+
+    # === MÉTODO DE PAGO (DEBAJO DEL TOTAL) ===
+    y_totales -= 15
+    can.setFont("Carlito", 11)
+    can.drawString(400, y_totales, f"MÉTODO/PAGO: {prefactura['metodo_pago']}")
+
+    # === TOTAL EN LETRAS (AL LADO IZQUIERDO) ===
     monto = prefactura['monto']
     monto_entero = int(monto)
     monto_centavos = int(round((monto - monto_entero) * 100))
@@ -175,54 +274,98 @@ def generar_pdf_prefactura(prefactura_id):
         monto_letras = f"{monto_letras} PESOS CON {monto_centavos:02d}/100 M.N."
     else:
         monto_letras = f"{monto_letras} PESOS 00/100 M.N."
-    can.drawString(44, 487, monto_letras)
-    
-    can.setFont("Carlito", 13)
-    can.drawRightString(592, 484, f"${subtotal_general:.2f}")  # SUBTOTAL (suma de productos)
-    can.drawRightString(592, 453, f"${prefactura['iva']:.2f}")       # IVA
-    
-    can.setFont("Carlito", 13)
-    can.drawRightString(592, 437, f"${prefactura['monto']:.2f}")     # TOTAL
 
-        # --- TRASLADO ---
-    traslado_tipo = prefactura.get('traslado', 'ninguno')
-    costo_traslado = prefactura.get('costo_traslado', 0)
+    # Posicionar el total en letras al lado izquierdo del método de pago
+    can.drawString(60, y_totales, f"SON: {monto_letras}")   
+   
 
-    # Texto a la izquierda
-    can.setFont("Carlito", 11)
-    can.drawString(462, 470, f"({traslado_tipo.capitalize()})")  # Ajusta X,Y según tu plantilla
+    # === AVISOS IMPORTANTES PARA EL CLIENTE ===
+    y_avisos = y_totales - 25  # Más espacio entre totales y avisos
 
-    # Costo a la derecha
-    can.setFont("Carlito", 13)
-    can.drawRightString(592, 469, f"${costo_traslado:.2f}")  # Ajusta X,Y según tu plantilla
+    # Línea separadora para los avisos
+    can.line(28, y_avisos + 10, 585, y_avisos + 10)
+    y_avisos -= 5
 
-    # SOLO UNA VEZ, al final:
+    # REQUISITOS DE CLIENTE
+    can.setFont("Helvetica-Bold", 10)
+    can.drawString(60, y_avisos, "REQUISITOS DE CLIENTE:")
+    y_avisos -= 15
+
+    can.setFont("Helvetica", 8)
+    can.drawString(60, y_avisos, "LOS SIGUIENTES DOCUMENTOS PUEDEN SER EN IMAGEN O EN COPIA IMPRESA:")
+    y_avisos -= 12
+
+    can.drawString(70, y_avisos, "• COPIA DE IDENTIFICACIÓN.")
+    y_avisos -= 10
+
+    can.drawString(70, y_avisos, "• COPIA LICENCIA DE CONDUCIR.")
+    y_avisos -= 10
+
+    can.drawString(70, y_avisos, "• COMPROBANTE DE DOMICILIO.")
+    y_avisos -= 20
+
+    # REQUISITOS DE RENTA
+    can.setFont("Helvetica-Bold", 10)
+    can.drawString(60, y_avisos, "REQUISITOS DE RENTA:")
+    y_avisos -= 15
+
+    can.setFont("Helvetica", 8)
+    can.drawString(70, y_avisos, "• SE REQUIERE EL PAGO COMPLETO POR ADELANTADO DE LA RENTA.")
+    y_avisos -= 10
+
+    can.drawString(70, y_avisos, "• UBICACIÓN EXACTA DE LA OBRA (POR GOOGLE MAPS)")
+    y_avisos -= 20
+
+    # ¡IMPORTANTE!
+    can.setFont("Helvetica-Bold", 10)
+    can.drawString(60, y_avisos, "¡IMPORTANTE!")
+    y_avisos -= 15
+
+    can.setFont("Helvetica", 8)
+    can.drawString(70, y_avisos, "• EL PERIODO DE RENTA INCLUYE DOMINGOS, DÍAS INHÁBILES Y FESTIVOS.")
+    y_avisos -= 10
+
+    can.drawString(70, y_avisos, "• NO SE ARMA, NI SE DESARMA EL EQUIPO.")
+
+
+
+
+
+
+
+
+    # Guardar el canvas
     can.save()
     packet.seek(0)
 
-    # --- COMBINAR CON LA PLANTILLA ---
-    plantilla_path = os.path.join(current_app.root_path, 'static/notas/plantilla_prefactura.pdf')
-    plantilla_pdf = PdfReader(plantilla_path)
-    overlay_pdf = PdfReader(packet)
-    output = PdfWriter()
+    # --- COMBINAR CON LA PLANTILLA (SI TIENES) ---
+    try:
+        plantilla_path = os.path.join(current_app.root_path, 'static/notas/prefactura_plantilla.pdf')
+        if os.path.exists(plantilla_path):
+            plantilla_pdf = PdfReader(plantilla_path)
+            overlay_pdf = PdfReader(packet)
+            output = PdfWriter()
 
-    page = plantilla_pdf.pages[0]
-    page.merge_page(overlay_pdf.pages[0])
-    output.add_page(page)
+            page = plantilla_pdf.pages[0]
+            page.merge_page(overlay_pdf.pages[0])
+            output.add_page(page)
+        else:
+            # Si no hay plantilla, usar solo el overlay
+            overlay_pdf = PdfReader(packet)
+            output = PdfWriter()
+            output.add_page(overlay_pdf.pages[0])
+    except Exception as e:
+        print(f"Error con plantilla, usando solo overlay: {e}")
+        overlay_pdf = PdfReader(packet)
+        output = PdfWriter()
+        output.add_page(overlay_pdf.pages[0])
 
     output_stream = BytesIO()
     output.write(output_stream)
     output_stream.seek(0)
-    return send_file(output_stream, download_name=f"prefactura_{prefactura_id}.pdf", mimetype='application/pdf')
-
-@prefactura_bp.route('/pdf_renta/<int:renta_id>')
-def generar_pdf_prefactura_por_renta(renta_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    # Buscar prefactura por renta_id
-    cursor.execute("SELECT id FROM prefacturas WHERE renta_id = %s ORDER BY id DESC LIMIT 1", (renta_id,))
-    prefactura = cursor.fetchone()
-    if not prefactura:
-        return f"No hay prefactura para la renta {renta_id}", 404
-    # Redirigir a la función original con el id de prefactura encontrado
-    return redirect(url_for('prefactura.generar_pdf_prefactura', prefactura_id=prefactura['id']))
+    
+    return send_file(
+        output_stream, 
+        download_name=f"prefactura_{prefactura_id}.pdf", 
+        mimetype='application/pdf'
+    )

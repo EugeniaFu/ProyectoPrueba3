@@ -1,10 +1,11 @@
+# Al inicio del archivo, agregar:
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, session
 from utils.db import get_db_connection
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from functools import wraps
-
+import requests  
 
 def requiere_permiso(nombre_permiso):
     def decorator(f):
@@ -67,13 +68,21 @@ def clientes():
         ver_bajas=ver_bajas
     )
 
+
+
+
+
+
+#############################
+###############################
+############################# EDITA CLIENTES
+
 @clientes_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 @requiere_permiso('editar_cliente')
 def editar_cliente(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     if request.method == 'POST':
-        # Actualiza datos del cliente
         nombre = request.form['nombre']
         apellido1 = request.form['apellido1']
         apellido2 = request.form['apellido2']
@@ -81,10 +90,27 @@ def editar_cliente(id):
         correo = request.form['correo']
         rfc = request.form['rfc']
         tipo_cliente = request.form['tipo_cliente']
+        # AGREGAR campos de dirección para editar:
+        calle = request.form.get('calle', '').strip()
+        entre_calles = request.form.get('entre_calles', '').strip()
+        numero_exterior = request.form.get('numero_exterior', '').strip()
+        numero_interior = request.form.get('numero_interior', '').strip()
+        colonia = request.form.get('colonia', '').strip()
+        codigo_postal = request.form.get('codigo_postal', '').strip()
+        municipio = request.form.get('municipio', '').strip()
+        estado = request.form.get('estado', '').strip()
+        
+        # UPDATE con campos de dirección
         cursor.execute("""
-            UPDATE clientes SET nombre=%s, apellido1=%s, apellido2=%s, telefono=%s, correo=%s, rfc=%s, tipo_cliente=%s
+            UPDATE clientes SET nombre=%s, apellido1=%s, apellido2=%s, telefono=%s, correo=%s, rfc=%s, tipo_cliente=%s,
+                            calle=%s, entre_calles=%s, numero_exterior=%s, numero_interior=%s, colonia=%s,
+                            codigo_postal=%s, municipio=%s, estado=%s
             WHERE id=%s
-        """, (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, id))
+        """, (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente,
+            calle, entre_calles, numero_exterior, numero_interior, colonia,
+            codigo_postal, municipio, estado, id))
+    
+
 
         # Eliminar documentos seleccionados
         ids_eliminar = request.form.getlist('eliminar_doc')
@@ -128,6 +154,12 @@ def editar_cliente(id):
 
 
 
+
+
+
+
+
+
 @clientes_bp.route('/baja/<int:id>')
 @requiere_permiso('baja_cliente')
 def baja_cliente(id):
@@ -168,6 +200,14 @@ def eliminar_cliente(id):
     flash("Cliente eliminado definitivamente.", "danger")
     return redirect(url_for('clientes.clientes', ver_bajas=1))
 
+
+
+
+
+
+
+
+
 ####################################
 ####################################
 ############################## visualizacion del cliente
@@ -178,9 +218,10 @@ def detalle_cliente(id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT c.*, s.nombre AS sucursal_nombre
+        SELECT c.*, s.nombre AS sucursal_nombre, r.nombre AS rol_nombre
         FROM clientes c
         LEFT JOIN sucursales s ON c.sucursal_id = s.id
+        LEFT JOIN roles r ON c.rol_id = r.id
         WHERE c.id=%s
     """, (id,))
     cliente = cursor.fetchone()
@@ -192,6 +233,15 @@ def detalle_cliente(id):
         flash("Cliente no encontrado.", "danger")
         return redirect(url_for('clientes.clientes'))
     return render_template('clientes/detalle_cliente.html', cliente=cliente, documentos=documentos)
+
+
+
+
+
+
+
+
+
 
 
 ####################################
@@ -232,6 +282,47 @@ def buscar_clientes():
 
 ####################################
 ####################################
+############################## BUSCADOR DE CODIGOS POSTALES 
+
+@clientes_bp.route('/api/colonias/<codigo_postal>')
+def obtener_colonias_por_cp(codigo_postal):
+    """API para obtener colonias por código postal"""
+    import requests
+    
+    try:
+        # Usar API gratuita de SEPOMEX
+        url = f"https://api-sepomex.hckdrk.mx/query/info_cp/{codigo_postal}"
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if data.get('response') and data['response'].get('cp_estado'):
+                return jsonify({
+                    'success': True,
+                    'estado': data['response']['estado'],
+                    'municipio': data['response']['municipio'],
+                    'colonias': data['response']['colonia']
+                })
+        
+        return jsonify({'success': False, 'message': 'CP no encontrado'})
+        
+    except Exception as e:
+        print(f"Error al consultar CP: {e}")
+        return jsonify({'success': False, 'message': 'Error al consultar CP'})
+
+
+
+
+
+
+
+
+
+
+
+####################################
+####################################
 ############################## NUEVO CLIENTE 
 
 @clientes_bp.route('/nuevo', methods=['GET', 'POST'])
@@ -249,14 +340,30 @@ def nuevo_cliente():
         fecha_alta = datetime.now().strftime('%Y-%m-%d')
         archivos = request.files.getlist('documentos')
 
+        # AGREGAR campos de dirección:
+        calle = request.form.get('calle', '').strip()
+        entre_calles = request.form.get('entre_calles', '').strip()
+        numero_exterior = request.form.get('numero_exterior', '').strip()
+        numero_interior = request.form.get('numero_interior', '').strip()
+        colonia = request.form.get('colonia', '').strip()
+        codigo_postal = request.form.get('codigo_postal', '').strip()
+        municipio = request.form.get('municipio', '').strip()
+        estado = request.form.get('estado', '').strip()
+
         sucursal_id = session.get('sucursal_id')
 
         print("Datos recibidos:", nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, "Sucursal:", sucursal_id)
+        print("Dirección recibida:", calle, entre_calles, numero_exterior, colonia, codigo_postal, municipio, estado)
         print("Archivos recibidos:", [a.filename for a in archivos])
 
         errores = []
         if not nombre or not apellido1 or not apellido2 or not telefono or not tipo_cliente:
             errores.append("Todos los campos obligatorios deben estar llenos.")
+        
+        # AGREGAR validaciones de dirección:
+        if not calle or not numero_exterior or not colonia or not codigo_postal or not municipio or not estado:
+            errores.append("Todos los campos de dirección son obligatorios.")
+        
         if not any(archivo.filename for archivo in archivos):
             errores.append("Debes subir al menos un documento (INE, Licencia o Comprobante).")
         if not sucursal_id:
@@ -284,10 +391,22 @@ def nuevo_cliente():
 
         try:
             cursor = conn.cursor()
+            
+            # OBTENER ID del rol cliente automáticamente
+            cursor.execute("SELECT id FROM roles WHERE nombre = 'cliente'")
+            rol_cliente = cursor.fetchone()
+            rol_id = rol_cliente[0] if rol_cliente else None
+            
+            # ACTUALIZAR INSERT para incluir todos los campos nuevos:
             cursor.execute("""
-                INSERT INTO clientes (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, sucursal_id, fecha_alta)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, sucursal_id, fecha_alta))
+                INSERT INTO clientes (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente, 
+                                     calle, entre_calles, numero_exterior, numero_interior, colonia, 
+                                     codigo_postal, municipio, estado, rol_id, sucursal_id, fecha_alta)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (nombre, apellido1, apellido2, telefono, correo, rfc, tipo_cliente,
+                  calle, entre_calles, numero_exterior, numero_interior, colonia, 
+                  codigo_postal, municipio, estado, rol_id, sucursal_id, fecha_alta))
+            
             cliente_id = cursor.lastrowid
 
             # === BLOQUE PARA GENERAR EL CODIGO_CLIENTE DINAMICO ===

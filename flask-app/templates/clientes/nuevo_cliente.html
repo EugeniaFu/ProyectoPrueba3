@@ -32,9 +32,11 @@
     </script>
     {% endif %}
     {% endwith %}
+
     <a href="{{ url_for('clientes.clientes') }}" class="nuevo-cliente-btn-regresar mb-3">
         <i class="bi bi-arrow-left"></i> Regresar
     </a>
+
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="nuevo-cliente-card">
@@ -45,7 +47,7 @@
                             <!-- Información del cliente -->
                             <div class="col-md-6">
                                 <div class="nuevo-cliente-section h-100">
-                                    <h5>Información</h5>
+                                    <h5>Información Personal</h5>
                                     <div class="mb-3">
                                         <label class="form-label">Nombres *</label>
                                         <input type="text" class="form-control" name="nombre" required>
@@ -62,6 +64,41 @@
                                         <label class="form-label">Teléfono *</label>
                                         <input type="text" class="form-control" name="telefono" required>
                                     </div>
+
+
+
+
+
+
+                                    <!-- NUEVA SECCIÓN DE DIRECCIÓN -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Dirección *</label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <button type="button" class="btn btn-outline-primary"
+                                                id="btnAbrirDireccion">
+                                                <i class="bi bi-geo-alt"></i> Ingresar Dirección
+                                            </button>
+                                            <span class="badge bg-secondary" id="estadoDireccion">Sin dirección</span>
+                                        </div>
+                                        <div id="resumenDireccion" class="mt-2 p-2 bg-light rounded"
+                                            style="display: none;">
+                                            <small class="text-muted">
+                                                <strong>Dirección:</strong><br>
+                                                <span id="direccionCompleta"></span>
+                                            </small>
+                                        </div>
+
+                                        <!-- Campos ocultos para enviar al servidor -->
+                                        <input type="hidden" name="calle" id="hidden_calle">
+                                        <input type="hidden" name="entre_calles" id="hidden_entre_calles">
+                                        <input type="hidden" name="numero_exterior" id="hidden_numero_exterior">
+                                        <input type="hidden" name="numero_interior" id="hidden_numero_interior">
+                                        <input type="hidden" name="colonia" id="hidden_colonia">
+                                        <input type="hidden" name="codigo_postal" id="hidden_codigo_postal">
+                                        <input type="hidden" name="municipio" id="hidden_municipio">
+                                        <input type="hidden" name="estado" id="hidden_estado">
+                                    </div>
+
                                     <div class="mb-3">
                                         <label class="form-label">Correo electrónico</label>
                                         <input type="email" class="form-control" name="correo">
@@ -81,6 +118,9 @@
                                     </div>
                                 </div>
                             </div>
+
+
+
                             <!-- Documentos del cliente -->
                             <div class="col-md-6">
                                 <div class="nuevo-cliente-section h-100">
@@ -109,14 +149,85 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
+
                         <div class="text-end mt-3">
                             <button type="submit" class="nuevo-cliente-btn-guardar" id="btn-guardar-cliente">
                                 <i class="bi bi-save"></i> Guardar
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- MODAL DE DIRECCIÓN -->
+    <div class="modal fade" id="modalDireccion" tabindex="-1" aria-labelledby="modalDireccionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDireccionLabel">
+                        <i class="bi bi-geo-alt"></i> Dirección del Cliente
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Calle *</label>
+                        <input type="text" class="form-control" id="modal_calle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Entre calles</label>
+                        <input type="text" class="form-control" id="modal_entre_calles"
+                            placeholder="Ej: Entre Calle 5 de Mayo y Calle Morelos">
+                        <small class="text-muted">Opcional - Calles de referencia para ubicar mejor el domicilio</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número Exterior *</label>
+                            <input type="text" class="form-control" id="modal_numero_exterior" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número Interior</label>
+                            <input type="text" class="form-control" id="modal_numero_interior">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Código Postal *</label>
+                            <input type="text" class="form-control" id="modal_codigo_postal" maxlength="5"
+                                pattern="[0-9]{5}" required>
+                            <small class="text-muted" id="modal_cp_status">Ingresa 5 dígitos</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Colonia *</label>
+                            <select class="form-select" id="modal_colonia" required disabled>
+                                <option value="">Primero ingresa el CP</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Municipio *</label>
+                            <input type="text" class="form-control" id="modal_municipio" required readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado *</label>
+                            <input type="text" class="form-control" id="modal_estado" required readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarDireccion">
+                        <i class="bi bi-check-lg"></i> Guardar Dirección
+                    </button>
                 </div>
             </div>
         </div>
