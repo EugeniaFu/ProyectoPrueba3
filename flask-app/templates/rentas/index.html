@@ -132,9 +132,15 @@
                     <i class="bi bi-printer"></i>
                   </button>
                   <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Nota de salida</a>
+                    <li>
+                      <a class="dropdown-item" href="/notas_salida/pdf_renta/{{ renta[0] }}" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Nota de salida
+                      </a>
                     </li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada</a>
+                    <li>
+                      <a class="dropdown-item" href="/notas_entrada/pdf_renta/{{ renta[0] }}" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada
+                      </a>
                     </li>
                     <li>
                       <a class="dropdown-item" href="/prefactura/pdf_renta/{{ renta[0] }}" target="_blank">
