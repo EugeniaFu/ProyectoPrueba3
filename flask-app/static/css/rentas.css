@@ -241,3 +241,41 @@
         font-size: 0.82rem;
     }
 }
+
+/* --- ESTILOS PARA TOOLTIPS Y PRODUCTOS --- */
+
+/* Ocultar caret de dropdowns */
+.no-caret::after {
+    display: none !important;
+}
+
+/* Estilos para tooltips mejorados */
+.tooltip-producto {
+    cursor: help;
+    border-bottom: 1px dotted #14ff5a;
+}
+
+.tooltip-direccion {
+    cursor: help;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Estilos para productos en la tabla */
+.productos-lista .producto-item {
+    display: block;
+    margin-bottom: 2px;
+    padding: 1px 3px;
+    background: rgba(0, 13, 251, 0.05);
+    border-radius: 3px;
+    font-size: 0.75rem;
+}
+
+/* Mejorar la apariencia de productos sin el scroll */
+.productos-lista {
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
