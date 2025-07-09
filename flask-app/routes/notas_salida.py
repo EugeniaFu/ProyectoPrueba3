@@ -7,6 +7,9 @@ from PyPDF2 import PdfReader, PdfWriter
 from io import BytesIO
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
 import os
 
 notas_salida_bp = Blueprint('notas_salida', __name__, url_prefix='/notas_salida')
@@ -167,12 +170,13 @@ def generar_pdf_nota_salida(nota_salida_id):
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # Obtener datos de la nota de salida
+        # Obtener datos completos de la nota de salida
         cursor.execute("""
             SELECT ns.folio, ns.fecha, ns.numero_referencia, ns.observaciones,
                    r.fecha_salida, r.fecha_entrada, r.direccion_obra,
                    CONCAT(c.nombre, ' ', c.apellido1, ' ', c.apellido2) AS cliente_nombre,
-                   c.telefono AS celular
+                   c.codigo_cliente, c.telefono, c.calle, c.numero_exterior, 
+                   c.numero_interior, c.entre_calles, c.colonia, c.codigo_postal
             FROM notas_salida ns
             JOIN rentas r ON ns.renta_id = r.id
             JOIN clientes c ON r.cliente_id = c.id
@@ -189,42 +193,102 @@ def generar_pdf_nota_salida(nota_salida_id):
             FROM notas_salida_detalle nsd
             JOIN piezas p ON nsd.id_pieza = p.id_pieza
             WHERE nsd.nota_salida_id = %s
+            ORDER BY p.nombre_pieza
         """, (nota_salida_id,))
         piezas = cursor.fetchall()
         
         cursor.close()
         conn.close()
         
-        # --- GENERAR OVERLAY CON DATOS ---
+        # --- GENERAR PDF COMPLETO ---
         packet = BytesIO()
         can = canvas.Canvas(packet, pagesize=letter)
         pdfmetrics.registerFont(TTFont('Carlito', os.path.join(current_app.root_path, 'static/fonts/Carlito-Regular.ttf')))
         
-        # Configurar fuente
-        can.setFont("Carlito", 13)
+        # CONFIGURACIÓN INICIAL
+        page_width, page_height = letter
+        y_position = page_height - 100  # Empezar desde arriba
         
-        # FOLIO (esquina superior derecha)
-        can.setFont("Carlito", 15)
-        can.drawString(450, 704, f"# {str(nota['folio']).zfill(5)}")
         
-        # FECHA Y HORA DE EMISIÓN
-        can.setFont("Carlito", 13)
-        fecha_emision = nota['fecha'].strftime('%d/%m/%Y %H:%M')
-        can.drawString(408, 682, fecha_emision)
+        # Folio (esquina superior derecha)
+        can.setFont("Carlito", 16)
+        can.drawRightString(502,670, f"#{str(nota['folio']).zfill(5)}")
         
-        # DATOS DEL CLIENTE
-        can.setFont("Carlito", 13)
-        can.drawString(65, 709, nota['cliente_nombre'])  # NOMBRE
-        can.drawString(63, 693, nota['celular'])         # CELULAR
-        can.drawString(193, 693, nota['numero_referencia'] or 'Sin referencia')  # NÚMERO DE REFERENCIA
+        # Fecha y hora de emisión
+        can.setFont("Carlito", 10)
+        fecha_emision = nota['fecha'].strftime('%d/%m/%Y - %H:%M:%S')
+        can.drawRightString(573, 708, f"{fecha_emision}")
         
-        # DIRECCIÓN DE OBRA (con ajuste automático de líneas)
-        can.setFont("Carlito", 13)
-        direccion = nota['direccion_obra']
         
+        # === DATOS DEL CLIENTE ===
+        
+        # Cliente con código
+        can.setFont("Carlito", 10)
+        cliente_completo = f"{nota['codigo_cliente']} - {nota['cliente_nombre'].upper()}"
+        can.drawString(62, 703, f"{cliente_completo}")
+       
+        
+        # Teléfono
+        can.drawString(69, 671, f"{nota['telefono'] or 'No registrado'}")
+        
+        
+        # Número de referencia
+        referencia = nota['numero_referencia'] or 'Sin número de referencia'
+        can.drawString(231, 671, f"{referencia}")
+        
+        
+        # Dirección completa
+        direccion_completa = nota['calle'] or ''
+        if nota['numero_exterior']:
+            direccion_completa += f" #{nota['numero_exterior']}"
+        if nota['numero_interior']:
+            direccion_completa += f", Int. {nota['numero_interior']}"
+        if nota['entre_calles']:
+            direccion_completa += f" (entre {nota['entre_calles']})"
+        if nota['colonia']:
+            direccion_completa += f", COL. {nota['colonia']}"
+        if nota['codigo_postal']:
+            direccion_completa += f" - C.P. {nota['codigo_postal']}"
+        
+        can.drawString(73, 687, f"{direccion_completa.upper()}")
+        
+        
+        # DATOS DE LA RENTA
+        y_position -= 85
+        # Datos de piezas
+        can.setFont("Carlito", 10)
+        for pieza in piezas:
+            # Verificar si necesitamos nueva página
+            if y_position < 150:
+                can.showPage()
+                can.setFont("Carlito", 10)
+                y_position = page_height - 60
+            
+            can.drawString(70, y_position+5, str(pieza['cantidad']))
+            can.drawString(140, y_position+5, pieza['nombre_pieza'].upper())
+            y_position -= 13
+        
+        y_position -= 5
+
+        # Período de renta
+        can.setFont("Carlito", 10)
+        fecha_salida = nota['fecha_salida'].strftime('%d/%m/%Y') if nota['fecha_salida'] else 'No definida'
+        if nota['fecha_entrada']:
+            fecha_entrada = nota['fecha_entrada'].strftime('%d/%m/%Y')
+            periodo = f"{fecha_salida} al {fecha_entrada}"
+        else:
+            periodo = f"{fecha_salida} a FECHA INDEFINIDA"
+        
+        can.drawString(60, y_position, f"PERIODO DE RENTA: {periodo}")
+        y_position -= 15
+
+        # Dirección de obra
+                # Dirección de obra con saltos de línea automáticos
+        can.setFont("Carlito", 10)
+        direccion_obra_text = f"DIRECCIÓN DE OBRA: {nota['direccion_obra'].upper()}"
+
         # Función para dividir texto en líneas
-        def dividir_texto(texto, max_chars=60):
-            """Divide el texto en líneas de máximo max_chars caracteres"""
+        def dividir_texto_direccion(texto, max_chars=100):
             if len(texto) <= max_chars:
                 return [texto]
             
@@ -244,87 +308,150 @@ def generar_pdf_nota_salida(nota_salida_id):
                 lineas.append(linea_actual)
             
             return lineas
-        
-        # Dividir la dirección en líneas y dibujarlas
-        lineas_direccion = dividir_texto(direccion, 100)  # Máximo 60 caracteres por línea
-        y_direccion = 523
-        for i, linea in enumerate(lineas_direccion[:2]):  # Máximo 2 líneas
-            can.drawString(50, y_direccion - (i * 12), linea)
-        
-        # PERIODO DE RENTA
-        fecha_salida = nota['fecha_salida'].strftime('%d/%m/%Y') if nota['fecha_salida'] else '--/--/----'
-        if nota['fecha_entrada']:
-            fecha_entrada = nota['fecha_entrada'].strftime('%d/%m/%Y')
-            periodo = f"{fecha_salida} - {fecha_entrada}"
-            # Fecha de entrega (día posterior a fecha_entrada)
-            fecha_entrega = (nota['fecha_entrada'] + timedelta(days=1)).strftime('%d/%m/%Y')
-        else:
-            periodo = f"{fecha_salida} - INDEFINIDA"
-            fecha_entrega = "INDEFINIDA"
-        
-        can.setFont("Carlito", 12)
-        can.drawString(107, 502, periodo)  # PERIODO
 
-        can.setFont("Carlito", 12)
-        can.drawString(325, 432, f" {fecha_entrega}")  # FECHA DE ENTREGA
-        
-        # TABLA DE PIEZAS
-        y = 634
-        can.setFont("Carlito", 12)
-        
-        # Determinar qué plantilla usar basado en el número de piezas
-        usar_plantilla_extendida = len(piezas) > 6
-        
-        if usar_plantilla_extendida:
-            # Plantilla extendida: dos columnas
-            columna_izq = piezas[:len(piezas)//2 + len(piezas)%2]  # Primera mitad (más uno si es impar)
-            columna_der = piezas[len(piezas)//2 + len(piezas)%2:]  # Segunda mitad
-            
-            # Columna izquierda
-            y_izq = 630
-            for pieza in columna_izq:
-                can.drawString(110, y_izq, pieza['nombre_pieza'])  # NOMBRE DE PIEZA
-                can.drawRightString(65, y_izq, str(pieza['cantidad']))  # CANTIDAD
-                y_izq -= 15
-            
-            # Columna derecha
-            y_der = 630
-            for pieza in columna_der:
-                can.drawString(398, y_der, pieza['nombre_pieza'])  # NOMBRE DE PIEZA (columna derecha)
-                can.drawRightString(335, y_der, str(pieza['cantidad']))  # CANTIDAD (columna derecha)
-                y_der -= 14
+        # Dividir la dirección de obra en líneas
+        lineas_direccion = dividir_texto_direccion(direccion_obra_text, 100)
+
+        # Dibujar cada línea
+        for i, linea in enumerate(lineas_direccion):
+            can.drawString(60, y_position, linea)
+            y_position -= 12  # Espacio entre líneas
+
+        y_position -= 3  # Espacio adicional después de la dirección
+
+        # === FECHA LÍMITE DE ENTREGA ===
+        can.setFont("Helvetica-Bold", 9)
+        if nota['fecha_entrada']:
+            fecha_limite_obj = nota['fecha_entrada'] + timedelta(days=1)
+            fecha_limite = f"{fecha_limite_obj.strftime('%d/%m/%Y')} ANTES DE LAS 9:00 A.M."
+            can.drawString(60, y_position, f"FECHA LÍMITE DE ENTREGA: {fecha_limite}")
         else:
-            # Plantilla normal: una columna (máximo 5 piezas)
-            for pieza in piezas[:5]:  # Limitar a 5 piezas en plantilla normal
-                can.drawString(125, y, pieza['nombre_pieza'])  # NOMBRE DE PIEZA
-                can.drawRightString(65, y, str(pieza['cantidad']))  # CANTIDAD
-                y -= 14
+            can.drawString(60, y_position, "FECHA LÍMITE DE ENTREGA: INDEFINIDA")
+
+        y_position -= 30
+
+        # Línea separadora
+        can.line(30, y_position+24 , page_width - 30, y_position+24)
+        
+        y_position -= 15
+        # === LEYENDA DE RESPONSABILIDAD ===
+        can.setFont("Carlito", 11)
+        can.drawString(60, y_position+24, "TÉRMINOS Y CONDICIONES")
+
+        y_position += 20
+
+        # Crear estilo para párrafos
+        styles = getSampleStyleSheet()
+        style_normal = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontName='Carlito',
+            fontSize=9,
+            leading=11,
+            leftIndent=0,
+            rightIndent=0,
+            spaceAfter=6,
+        )
+
+        # Texto completo como un solo párrafo con saltos de línea automáticos
+        texto_completo = """
+
+        POR MEDIO DE LA PRESENTE, RECONOZCO HABER RECIBIDO EN PERFECTO ESTADO Y FUNCIONANDO EL EQUIPO DESCRITO ANTERIORMENTE.<br/>
+        ME COMPROMETO A:<br/>
+        • HACER USO RESPONSABLE DEL EQUIPO RENTADO.<br/>
+        • MANTENER EL EQUIPO EN LAS MISMAS CONDICIONES EN QUE FUE ENTREGADO.<br/>
+        • DEVOLVER EL EQUIPO COMPLETO EN LA FECHA ACORDADA.<br/>
+        • RESPONDER POR CUALQUIER DAÑO, PÉRDIDA O ROBO DEL EQUIPO DURANTE EL PERÍODO DE RENTA.<br/>
+        • CUMPLIR CON TODAS LAS CONDICIONES ESTABLECIDAS EN EL CONTRATO DE RENTA.<br/><br/>
+
+        <b>IMPORTANTE:</b> EN CASO DE NO DEVOLVER EL EQUIPO EN LA FECHA Y HORA LÍMITE ESTABLECIDA, ACEPTO QUE SE ME REALIZARÁ EL CARGO DE COBRO CORRESPONDIENTE POR DÍA DE RETRASO;
+          EL COBRO SE CALCULARÁ CON BASE EN LA TARIFA DIARIA ORIGINAL DE LA RENTA.<br/><br/>
+
+        LA EMPRESA SE DESLINDA DE CUALQUIER RESPONSABILIDAD POR ACCIDENTES O DAÑOS CAUSADOS POR EL MAL USO DEL EQUIPO. EL CLIENTE ASUME TODA RESPONSABILIDAD DURANTE EL PERÍODO DE RENTA.
+        """
+
+        # Crear y dibujar el párrafo
+        p = Paragraph(texto_completo, style_normal)
+        ancho_disponible = page_width - 120  # Margen de 60 píxeles a cada lado
+        alto_disponible = y_position - 150
+
+        # Verificar si necesitamos nueva página
+        if y_position < 200:
+            can.showPage()
+            y_position = page_height - 60
+            alto_disponible = y_position - 150
+
+        w, h = p.wrap(ancho_disponible, alto_disponible)
+        p.drawOn(can, 60, y_position - h)
+
+        y_position -= h + 20
+        
+
+        # === FIRMAS ===
+        if y_position < 120:
+            can.showPage()
+            y_position = page_height - 200
+        
+        y_position -= 30
+        # Líneas para firmas
+        can.setFont("Carlito", 10)
+        can.line(60, y_position, 250, y_position)  # Línea cliente
+        can.line(350, y_position, 540, y_position)  # Línea empresa
+        
+        y_position -= 15
+        
+        # Etiquetas de firmas
+        can.drawString(60, y_position, "FIRMA DEL LA EMPRESA")
+        can.drawString(350, y_position, "FIRMA DEL CLIENTE")
+        
+        y_position -= 20
+        can.drawString(60, y_position, "ENTREGA: ________________________")
+        can.drawString(350, y_position, "RECIBE: ________________________")
+        
+        # Observaciones si existen
+        if nota['observaciones']:
+            y_position -= 40
+            can.setFont("Carlito", 10)
+            can.drawString(60, y_position, "OBSERVACIONES:")
+            y_position -= 12
+            can.setFont("Carlito", 9)
+            can.drawString(60, y_position, nota['observaciones'])
         
         # Guardar el canvas
         can.save()
         packet.seek(0)
         
         # --- COMBINAR CON LA PLANTILLA ---
-        # Seleccionar plantilla según número de piezas
-        if usar_plantilla_extendida:
-            plantilla_filename = 'plantilla_salida_extendida.pdf'
-        else:
-            plantilla_filename = 'plantilla_salida.pdf'
-            
-        plantilla_path = os.path.join(current_app.root_path, f'static/notas/{plantilla_filename}')
-        plantilla_pdf = PdfReader(plantilla_path)
-        overlay_pdf = PdfReader(packet)
-        output = PdfWriter()
-        
-        page = plantilla_pdf.pages[0]
-        page.merge_page(overlay_pdf.pages[0])
-        output.add_page(page)
+        try:
+            plantilla_path = os.path.join(current_app.root_path, 'static/notas/salida_plantilla.pdf')
+            if os.path.exists(plantilla_path):
+                plantilla_pdf = PdfReader(plantilla_path)
+                overlay_pdf = PdfReader(packet)
+                output = PdfWriter()
+                
+                page = plantilla_pdf.pages[0]
+                page.merge_page(overlay_pdf.pages[0])
+                output.add_page(page)
+            else:
+                # Si no hay plantilla, usar solo el overlay
+                overlay_pdf = PdfReader(packet)
+                output = PdfWriter()
+                output.add_page(overlay_pdf.pages[0])
+        except Exception as e:
+            print(f"Error con plantilla: {e}")
+            overlay_pdf = PdfReader(packet)
+            output = PdfWriter()
+            output.add_page(overlay_pdf.pages[0])
         
         output_stream = BytesIO()
         output.write(output_stream)
         output_stream.seek(0)
         
-        return send_file(output_stream, download_name=f"nota_salida_{str(nota['folio']).zfill(5)}.pdf", mimetype='application/pdf')
+        return send_file(
+            output_stream, 
+            download_name=f"nota_salida_{str(nota['folio']).zfill(5)}.pdf", 
+            mimetype='application/pdf'
+        )
         
     except Exception as e:
         if cursor:
@@ -332,24 +459,3 @@ def generar_pdf_nota_salida(nota_salida_id):
         if conn:
             conn.close()
         return f"Error al generar PDF: {str(e)}", 500
-    
-@notas_salida_bp.route('/pdf_renta/<int:renta_id>')
-def generar_pdf_nota_salida_por_renta(renta_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT id FROM notas_salida 
-        WHERE renta_id = %s 
-        ORDER BY id DESC 
-        LIMIT 1
-    """, (renta_id,))
-    
-    nota = cursor.fetchone()
-    cursor.close()
-    conn.close()
-
-    if not nota:
-        return f"No hay nota de salida para la renta {renta_id}", 404
-
-    return redirect(url_for('notas_salida.generar_pdf_nota_salida', nota_salida_id=nota['id']))

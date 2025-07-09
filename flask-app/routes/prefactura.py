@@ -302,6 +302,9 @@ def generar_pdf_prefactura(prefactura_id):
     can.drawString(70, y_avisos, "• LICENCIA DE CONDUCIR.")
     y_avisos -= 10
 
+    can.drawString(70, y_avisos, "• CONSTANCIA DE SITUACIÓN FISCAL.")
+    y_avisos -= 10
+
     can.drawString(70, y_avisos, "• COMPROBANTE DE DOMICILIO.")
     y_avisos -= 15
 
