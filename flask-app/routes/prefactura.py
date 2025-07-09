@@ -367,3 +367,15 @@ def generar_pdf_prefactura(prefactura_id):
         download_name=f"prefactura_{prefactura_id}.pdf", 
         mimetype='application/pdf'
     )
+
+@prefactura_bp.route('/pdf_renta/<int:renta_id>')
+def generar_pdf_prefactura_por_renta(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Buscar prefactura por renta_id
+    cursor.execute("SELECT id FROM prefacturas WHERE renta_id = %s ORDER BY id DESC LIMIT 1", (renta_id,))
+    prefactura = cursor.fetchone()
+    if not prefactura:
+        return f"No hay prefactura para la renta {renta_id}", 404
+    # Redirigir a la función original con el id de prefactura encontrado
+    return redirect(url_for('prefactura.generar_pdf_prefactura', prefactura_id=prefactura['id']))
