@@ -83,113 +83,146 @@
             <td>{{ renta[0] }}</td>
             <td>
               {% if productos_por_renta.get(renta[0]) %}
-              {% for item in productos_por_renta[renta[0]] %}
-              {{ item }}<br>
-              {% endfor %}
-              {% else %}
-              Sin productos
-              {% endif %}
-            </td>
-
-            <td>{{ renta[1].strftime('%d/%m/%Y %H:%M:%S') }}</td>
-            <td>{{ renta[2].strftime('%d/%m/%Y') if renta[2] else '' }}</td>
-            <td>{{ renta[3].strftime('%d/%m/%Y') if renta[3] else 'Indefinido' }}</td>
-            <td> {{ renta[12] }} {{ renta[13] }}</td>
-            <td>{{ renta[11] }}</td>
-            <td>
-              <span class="badge bg-{{ 'secondary' if renta[4] == 'en curso' else 'warning' }}">
-                {{ renta[4] }}
-              </span>
-            </td>
-            <td>
-              <span
-                class="badge bg-{{ 'success' if renta[5] == 'pagado' else 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}">
-                {{ renta[5] }}
-              </span>
-            </td>
-            <td>{{ renta[6] }}</td>
-            <td>${{ '%.2f'|format(renta[7]) }}</td>
-            <td>
-              <div class="d-flex actions justify-content-center gap-2">
-
-                <!-- Botón de Acciones -->
-                <div class="dropdown dropup">
-                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
-                    data-bs-toggle="dropdown" aria-expanded="false" title="Acciones">
-                    <i class="bi bi-three-dots"></i>
-                  </button>
-                  <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Editar</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-ban me-2"></i>Cancelar</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-repeat me-2"></i>Renovar Renta</a></li>
-                  </ul>
-                </div>
-
-                <!-- Botón de PDF -->
-                <div class="dropdown dropup">
-                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
-                    data-bs-toggle="dropdown" aria-expanded="false" title="Imprimir PDFs">
-                    <i class="bi bi-printer"></i>
-                  </button>
-                  <ul class="dropdown-menu">
-                    <li>
-                      <a class="dropdown-item" href="/notas_salida/pdf_renta/{{ renta[0] }}" target="_blank">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Nota de salida
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/notas_entrada/pdf_renta/{{ renta[0] }}" target="_blank">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/prefactura/pdf_renta/{{ renta[0] }}" target="_blank">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Prefactura
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Botón de Nota -->
-                <div class="dropdown dropup">
-                  <button class="btn btn-sm btn-primary text-white dropdown-toggle no-caret rounded rounded-circle"
-                    type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Registrar Notas">
-                    <i class="bi bi-journal-text"></i>
-                  </button>
-                  <ul class="dropdown-menu">
-                    <li>
-                      <a class="dropdown-item btn-nota-salida" href="#" data-renta-id="{{ renta[0] }}">
-                        <i class="bi bi-arrow-right-circle me-2"></i>Nota de Salida
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item btn-nota-entrada" href="#" data-renta-id="{{ renta[0] }}">
-                        <i class="bi bi-arrow-left-circle me-2"></i>Nota de Entrada
-                      </a>
-                    </li>
-                    <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
-                      href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
-                      data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
-                      renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
-                      <i class="bi bi-journal-check me-2"></i>Prefactura
-                    </a>
-                    </li>
-                  </ul>
-                </div>
-
-                <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" type="button"
-                  title="Eliminar registro">
-                  <i class="bi bi-trash-fill"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <div id="pagination-container" class="mt-3 d-flex justify-content-center"></div>
+              {% set productos = productos_por_renta[renta[0]] %}
+              {% if productos|length <= 2 %} {% for item in productos %} <div class="concepto">{{ item }}
     </div>
+
+    {% endfor %}
+    {% else %}
+    <div data-bs-toggle="tooltip" data-bs-placement="top"
+      title="{% for item in productos %}{{ item }}{% if not loop.last %} | {% endif %}{% endfor %}">
+      {% for item in productos[:1] %}
+      <div class="concepto">{{ item }}</div>
+      {% endfor %}
+      <small class="text-primary">
+        <i class="bi bi-list"></i> {{ productos|length }} productos
+      </small>
+    </div>
+    {% endif %}
+    {% else %}
+    <small class="text-muted">Sin productos</small>
+    {% endif %}
+    </td>
+
+    <td>{{ renta[1].strftime('%d/%m/%Y %H:%M:%S') }}</td>
+    <td>{{ renta[2].strftime('%d/%m/%Y') if renta[2] else '' }}</td>
+    <td>{{ renta[3].strftime('%d/%m/%Y') if renta[3] else 'Indefinido' }}</td>
+    <td>
+      {% set nombre_completo = renta[12] ~ ' ' ~ renta[13] %}
+      <div class="concepto">{{ nombre_completo }}</div>
+    </td>
+    <!-- COLUMNA DE DIRECCIÓN DE OBRA -->
+    <td>
+      {% if renta[11] and renta[11]|length > 50 %}
+      <!-- Dirección larga con tooltip -->
+      <div data-bs-toggle="tooltip" data-bs-placement="top" title="{{ renta[11] }}">
+        <div class="concepto">{{ renta[11][:47] }}...</div>
+        <small class="text-primary">
+          <i class="bi bi-geo-alt"></i> Ver completa
+        </small>
+      </div>
+      {% elif renta[11] %}
+      <!-- Dirección corta -->
+      <div class="concepto">{{ renta[11] }}</div>
+      {% else %}
+      <small class="text-muted">Sin dirección</small>
+      {% endif %}
+    </td>
+
+    <td>
+      <span class="badge bg-{{ 'secondary' if renta[4] == 'en curso' else 'warning' }}">
+        {{ renta[4] }}
+      </span>
+    </td>
+    <td>
+      <span
+        class="badge bg-{{ 'success' if renta[5] == 'pagado' else 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}">
+        {{ renta[5] }}
+      </span>
+    </td>
+    <td>{{ renta[6] }}</td>
+    <td>${{ '%.2f'|format(renta[7]) }}</td>
+    <td>
+      <div class="d-flex actions justify-content-center gap-2">
+
+        <!-- Botón de Acciones -->
+        <div class="dropdown dropup">
+          <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false" title="Acciones">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+            <li><a class="dropdown-item" href="#"><i class="bi bi-ban me-2"></i>Cancelar</a></li>
+            <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-repeat me-2"></i>Renovar Renta</a></li>
+          </ul>
+        </div>
+
+        <!-- Botón de PDF -->
+        <div class="dropdown dropup">
+          <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
+            data-bs-toggle="dropdown" aria-expanded="false" title="Imprimir PDFs">
+            <i class="bi bi-printer"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" href="/notas_salida/pdf_renta/{{ renta[0] }}" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Nota de salida
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/notas_entrada/pdf_renta/{{ renta[0] }}" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Nota de entrada
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/prefactura/pdf_renta/{{ renta[0] }}" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Prefactura
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Botón de Nota -->
+        <div class="dropdown dropup">
+          <button class="btn btn-sm btn-primary text-white dropdown-toggle no-caret rounded rounded-circle"
+            type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Registrar Notas">
+            <i class="bi bi-journal-text"></i>
+          </button>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item btn-nota-salida" href="#" data-renta-id="{{ renta[0] }}">
+                <i class="bi bi-arrow-right-circle me-2"></i>Nota de Salida
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item btn-nota-entrada" href="#" data-renta-id="{{ renta[0] }}">
+                <i class="bi bi-arrow-left-circle me-2"></i>Nota de Entrada
+              </a>
+            </li>
+            <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
+              href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
+              data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
+              renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
+              <i class="bi bi-journal-check me-2"></i>Prefactura
+            </a>
+            </li>
+          </ul>
+        </div>
+
+        <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" type="button"
+          title="Eliminar registro">
+          <i class="bi bi-trash-fill"></i>
+        </button>
+      </div>
+    </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+    <div id="pagination-container" class="mt-3 d-flex justify-content-center"></div>
   </div>
+</div>
 </div>
 
 {% include 'rentas/_modal_prefactura.html' %}
@@ -207,6 +240,14 @@
 {% block scripts %}
 <script>
   window.preciosProductos = {{ precios_productos | tojson }};
+
+  // Activar tooltips para productos y direcciones
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  });
 </script>
 <script src="{{ url_for('static', filename='js/rentas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/nota_salida.js') }}"></script>

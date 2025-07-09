@@ -68,25 +68,58 @@
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(35,57,93,0.07);
     background: #fff;
-    font-size: 0.97rem;
+    font-size: 0.85rem; /* Más pequeña */
 }
 .table-rentas th {
     background: #23395d;
     color: #fff;
     font-weight: bold;
     border-top: none;
-    font-size: 1.01rem;
-    padding: 0.55em 0.4em;
+    font-size: 0.9rem; /* Más pequeña */
+    padding: 0.4em 0.3em; /* Menos padding */
     text-align: center;
 }
 .table-rentas td {
     vertical-align: middle;
     border-bottom: 1px solid #e0e0e0;
-    font-size: 0.97rem;
-    padding: 0.45em 0.4em;
+    font-size: 0.85rem; /* Más pequeña */
+    padding: 0.35em 0.3em; /* Menos padding */
     text-align: center;
     background: #f8fafc;
     color: #23395d;
+    line-height: 1.3; /* Mejor espaciado */
+}
+
+/* Estilo uniforme para todos los elementos de la tabla */
+.table-rentas td small {
+    font-size: 0.85rem; /* Mismo tamaño que el td */
+    color: #23395d;
+    line-height: 1.2;
+}
+
+/* Solo los conceptos/títulos resaltados */
+/*.table-rentas td .concepto {
+    font-weight: bold;
+    color: #23395d;
+    font-size: 0.87rem;
+}*/
+
+/* Texto secundario más sutil */
+.table-rentas td .text-muted {
+    font-size: 0.8rem !important;
+    color: #6c757d !important;
+}
+
+.table-rentas td .text-primary {
+    font-size: 0.8rem !important;
+    color: #0d6efd !important;
+}
+
+/* Badges más pequeños y uniformes */
+.table-rentas .badge {
+    font-size: 0.75rem;
+    padding: 0.25em 0.6em;
+    border-radius: 6px;
 }
 .table-rentas tr:nth-child(even) td {
     background: #f1f4fa;
@@ -201,7 +234,10 @@
         margin-top: 0.5em;
     }
     .table-rentas th, .table-rentas td {
-        font-size: 0.93rem;
-        padding: 0.35em 0.2em;
+        font-size: 0.8rem; /* Más pequeña en móvil */
+        padding: 0.3em 0.15em;
+    }
+    .table-rentas td .concepto {
+        font-size: 0.82rem;
     }
 }

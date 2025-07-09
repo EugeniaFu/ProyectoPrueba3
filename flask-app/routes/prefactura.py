@@ -296,10 +296,10 @@ def generar_pdf_prefactura(prefactura_id):
     can.drawString(60, y_avisos, "LOS SIGUIENTES DOCUMENTOS PUEDEN SER EN IMAGEN O EN COPIA IMPRESA:")
     y_avisos -= 12
 
-    can.drawString(70, y_avisos, "• COPIA DE IDENTIFICACIÓN.")
+    can.drawString(70, y_avisos, "• IDENTIFICACIÓN OFICIAL.")
     y_avisos -= 10
 
-    can.drawString(70, y_avisos, "• COPIA LICENCIA DE CONDUCIR.")
+    can.drawString(70, y_avisos, "• LICENCIA DE CONDUCIR.")
     y_avisos -= 10
 
     can.drawString(70, y_avisos, "• COMPROBANTE DE DOMICILIO.")
