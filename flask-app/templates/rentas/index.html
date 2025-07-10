@@ -75,92 +75,115 @@
           {% for renta in rentas %}
           <tr>
             <td><strong>#{{ renta[0] }}</strong></td>
-            
+
             <!-- Columna de productos mejorada con tooltip -->
             <td>
               <div class="productos-lista">
                 {% if productos_por_renta.get(renta[0]) %}
-                  {% set productos_list = productos_por_renta[renta[0]] %}
-                  {% if productos_list|length > 2 %}
-                    <span class="tooltip-producto" 
-                          data-bs-toggle="tooltip" 
-                          data-bs-placement="top" 
-                          data-bs-html="true"
-                          title="{% for item in productos_list %}<div class='mb-1'>• {{ item }}</div>{% endfor %}">
-                      <span class="producto-item">{{ productos_list[0] }}</span>
-                      <span class="producto-item">{{ productos_list[1] }}</span>
-                      <small class="text-muted">+{{ productos_list|length - 2 }} más...</small>
-                    </span>
-                  {% else %}
-                    {% for item in productos_list %}
-                      <span class="producto-item">{{ item }}</span>
-                    {% endfor %}
-                  {% endif %}
+                {% set productos_list = productos_por_renta[renta[0]] %}
+                {% if productos_list|length > 2 %}
+                <span class="tooltip-producto" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true"
+                  title="{% for item in productos_list %}<div class='mb-1'>• {{ item }}</div>{% endfor %}">
+                  <span class="producto-item">{{ productos_list[0] }}</span>
+                  <span class="producto-item">{{ productos_list[1] }}</span>
+                  <small class="text-muted">+{{ productos_list|length - 2 }} más...</small>
+                </span>
                 {% else %}
-                  <small class="text-muted">Sin productos</small>
+                {% for item in productos_list %}
+                <span class="producto-item">{{ item }}</span>
+                {% endfor %}
+                {% endif %}
+                {% else %}
+                <small class="text-muted">Sin productos</small>
                 {% endif %}
               </div>
             </td>
 
             <td><small>{{ renta[1].strftime('%d/%m/%Y %H:%M') }}</small></td>
-            <td>{{ renta[2].strftime('%d/%m/%Y') if renta[2] else '<small class="text-muted">Sin fecha</small>' }}</td>
-            <td>{{ renta[3].strftime('%d/%m/%Y') if renta[3] else '<small class="text-warning">Indefinido</small>' }}</td>
+            <td>
+              {% if renta[2] %}
+              {{ renta[2].strftime('%d/%m/%Y') }}
+              {% else %}
+              <small class="text-muted">Sin fecha</small>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if renta[3] %}
+              <div class="d-flex flex-column">
+                <span>{{ renta[3].strftime('%d/%m/%Y') }}</span>
+                {% if renta[17] %}
+                <span class="badge {{ renta[17]['clase'] }} mt-1" style="font-size: 0.7rem;">
+                  {{ renta[17]['texto'] }}
+                </span>
+                {% endif %}
+              </div>
+              {% else %}
+              <div class="d-flex flex-column">
+                <small class="text-warning">Indefinido</small>
+              </div>
+              {% endif %}
+            </td>
+
             <td><strong>{{ renta[12] }} {{ renta[13] }}</strong></td>
-            
+
             <!-- Columna de dirección mejorada con tooltip -->
             <td>
               {% if renta[11] and renta[11]|length > 25 %}
-                <span class="tooltip-direccion" 
-                      data-bs-toggle="tooltip" 
-                      data-bs-placement="top" 
-                      title="{{ renta[11] }}">
-                  {{ renta[11][:25] }}...
-                </span>
+              <span class="tooltip-direccion" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ renta[11] }}">
+                {{ renta[11][:25] }}...
+              </span>
               {% else %}
-                {{ renta[11] or '<small class="text-muted">Sin dirección</small>' }}
+              {{ renta[11] or '<small class="text-muted">Sin dirección</small>' }}
               {% endif %}
             </td>
-            
+
             <td>
-              <span class="badge bg-{{ 'success' if renta[4] == 'activo' else 'secondary' if renta[4] == 'en curso' else 'warning' }}">
+              <span
+                class="badge bg-{{ 'success' if renta[4] == 'activo' else 'secondary' if renta[4] == 'en curso' else 'warning' }}">
                 {{ renta[4].title() }}
               </span>
             </td>
             <td>
-              <span class="badge bg-{{ 'success' if renta[5] == 'pago realizado' else 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}">
+              <span
+                class="badge bg-{{ 'success' if renta[5] == 'pago realizado' else 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}">
                 {{ renta[5] }}
               </span>
             </td>
             <td><small>{{ renta[6] or 'N/A' }}</small></td>
             <td><strong>${{ '%.2f'|format(renta[7]) }}</strong></td>
-            
+
             <!-- Columna de acciones con tooltips mejorados -->
             <td>
               <div class="d-flex actions justify-content-center gap-1">
 
                 <!-- Botón de Acciones -->
                 <div class="dropdown dropup">
-                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" 
-                          type="button" data-bs-toggle="dropdown" aria-expanded="false" 
-                          data-bs-placement="top" data-bs-toggle="tooltip" 
-                          title="Opciones de gestión de la renta">
+                  <button class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false" data-bs-placement="top" data-bs-toggle="tooltip"
+                    title="Opciones de gestión de la renta">
                     <i class="bi bi-three-dots"></i>
                   </button>
                   <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>Editar renta</a></li>
                     <li><a class="dropdown-item" href="#"><i class="bi bi-ban me-2"></i>Cancelar renta</a></li>
                     <li><a class="dropdown-item" href="#"><i class="bi bi-arrow-repeat me-2"></i>Renovar renta</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-eye me-2"></i>Ver detalles</a></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                      <a class="dropdown-item btn-ver-detalle" href="#" data-renta-id="{{ renta[0] }}">
+                        <i class="bi bi-eye me-2"></i>Ver Detalles
+                      </a>
+                    </li>
                   </ul>
                 </div>
 
                 <!-- Botón de PDF -->
                 <div class="dropdown dropup">
-                  <button class="btn btn-sm btn-success dropdown-toggle no-caret rounded rounded-circle" 
-                          type="button" data-bs-toggle="dropdown" aria-expanded="false" 
-                          data-bs-placement="top" data-bs-toggle="tooltip" 
-                          title="Descargar documentos PDF de la renta">
+                  <button class="btn btn-sm btn-success dropdown-toggle no-caret rounded rounded-circle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false" data-bs-placement="top" data-bs-toggle="tooltip"
+                    title="Descargar documentos PDF de la renta">
                     <i class="bi bi-printer"></i>
                   </button>
                   <ul class="dropdown-menu">
@@ -185,9 +208,8 @@
                 <!-- Botón de Notas -->
                 <div class="dropdown dropup">
                   <button class="btn btn-sm btn-warning text-dark dropdown-toggle no-caret rounded rounded-circle"
-                          type="button" data-bs-toggle="dropdown" aria-expanded="false" 
-                          data-bs-placement="top" data-bs-toggle="tooltip" 
-                          title="Gestionar notas y prefacturas de la renta">
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-placement="top"
+                    data-bs-toggle="tooltip" title="Gestionar notas y prefacturas de la renta">
                     <i class="bi bi-journal-text"></i>
                   </button>
                   <ul class="dropdown-menu">
@@ -201,12 +223,14 @@
                         <i class="bi bi-arrow-left-circle me-2 text-primary"></i>Crear Nota de Entrada
                       </a>
                     </li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
                     <li>
                       <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
-                         href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
-                         data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" 
-                         {% if renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true"{% endif %}>
+                        href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
+                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
+                        renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
                         <i class="bi bi-journal-check me-2 text-success"></i>Generar Prefactura
                       </a>
                     </li>
@@ -214,9 +238,8 @@
                 </div>
 
                 <!-- Botón de Eliminar -->
-                <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" 
-                        type="button" data-bs-placement="top" data-bs-toggle="tooltip" 
-                        title="Eliminar esta renta permanentemente">
+                <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle" type="button"
+                  data-bs-placement="top" data-bs-toggle="tooltip" title="Eliminar esta renta permanentemente">
                   <i class="bi bi-trash-fill"></i>
                 </button>
               </div>
@@ -231,9 +254,11 @@
 </div>
 
 {% include 'rentas/_modal_prefactura.html' %}
+{% include 'rentas/_modal_detalle_renta.html' %}
 {% include 'rentas/_modal_nota_salida.html' %}
 {% include 'rentas/_modal_nota_entrada.html' %}
 {% include 'rentas/_modal_nueva_renta.html' %}
+
 
 {% endblock %}
 
@@ -242,35 +267,33 @@
   window.preciosProductos = {{ precios_productos | tojson }};
 </script>
 
-<!-- JavaScript para inicializar tooltips mejorados -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     // Inicializar todos los tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl, {
-            trigger: 'hover focus',
-            delay: { show: 300, hide: 100 },
-            html: true,
-            placement: 'auto'
-        });
+      return new bootstrap.Tooltip(tooltipTriggerEl, {
+        trigger: 'hover focus',
+        delay: { show: 300, hide: 100 },
+        html: true,
+        placement: 'auto'
+      });
     });
 
     // Mejorar la experiencia de tooltips en dispositivos móviles
     if (window.innerWidth <= 768) {
-        tooltipList.forEach(function(tooltip) {
-            tooltip._config.trigger = 'click';
-        });
+      tooltipList.forEach(function (tooltip) {
+        tooltip._config.trigger = 'click';
+      });
     }
 
     // Funcionalidad adicional para productos
-    document.querySelectorAll('.tooltip-producto').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Opcional: mostrar modal con lista completa de productos
-        });
+    document.querySelectorAll('.tooltip-producto').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+      });
     });
-});
+  });
 </script>
 
 <script src="{{ url_for('static', filename='js/rentas.js') }}"></script>
@@ -278,4 +301,5 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="{{ url_for('static', filename='js/prefactura.js') }}"></script>
 <script src="{{ url_for('static', filename='js/nota_entrada.js') }}"></script>
 <script src="{{ url_for('static', filename='js/paginacion.js') }}"></script>
+<script src="{{ url_for('static', filename='js/detalle_renta.js') }}"></script>
 {% endblock %}

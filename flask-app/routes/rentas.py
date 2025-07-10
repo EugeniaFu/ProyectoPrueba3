@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask import jsonify
-from datetime import datetime
+from datetime import datetime, timedelta  # <- AGREGAR timedelta aquí
 from utils.db import get_db_connection
 
 from PyPDF2 import PdfReader, PdfWriter
@@ -12,24 +12,45 @@ from io import BytesIO
 
 rentas_bp = Blueprint('rentas', __name__, url_prefix='/rentas')
 
+
+
 @rentas_bp.route('/')
 def modulo_rentas():
+
+    print(f"🕐 HORA ACTUAL DEL SERVIDOR: {datetime.now()}")
+    print(f"📅 FECHA ACTUAL: {datetime.now().date()}")
+    
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # Consulta principal de rentas con cliente
     cursor.execute("""
         SELECT 
-            r.id, r.fecha_registro, r.fecha_salida, r.fecha_entrada,
-            r.estado_renta, r.estado_pago, r.metodo_pago,
-            r.total_con_iva, r.total, r.iva, r.observaciones,
-            r.direccion_obra,
-            c.nombre, c.apellido1, c.apellido2
-        FROM rentas r
-        JOIN clientes c ON r.cliente_id = c.id
-        ORDER BY r.fecha_registro DESC
-    """)
+        r.id, r.fecha_registro, r.fecha_salida, r.fecha_entrada,
+        r.estado_renta, r.estado_pago, r.metodo_pago,
+        r.total_con_iva, r.total, r.iva, r.observaciones,
+        r.direccion_obra,
+        c.nombre, c.apellido1, c.apellido2,
+        -- Verificar si ya tiene nota de entrada
+        (SELECT COUNT(*) FROM notas_entrada ne WHERE ne.renta_id = r.id) as tiene_nota_entrada,
+        -- Calcular fecha límite de entrega (un día después + 10:00 AM)
+        CASE 
+            WHEN r.fecha_entrada IS NOT NULL THEN 
+                DATE_ADD(r.fecha_entrada, INTERVAL 1 DAY)
+            ELSE NULL 
+        END as fecha_limite_entrega
+    FROM rentas r
+    JOIN clientes c ON r.cliente_id = c.id
+    ORDER BY r.fecha_registro DESC
+""")           
+    
     rentas = cursor.fetchall()
+
+    if rentas:
+        print("=== DATOS DE LA PRIMERA RENTA ===")
+        for i, campo in enumerate(rentas[0]):
+            print(f"Índice {i}: {campo}")
+
 
     # Detalles por renta
     cursor.execute("""
@@ -71,7 +92,7 @@ def modulo_rentas():
             "precio_unico": int(prod[7])
         }
 
-    # Sucursal actual
+            # Sucursal actual
     sucursal_id = session.get('sucursal_id')
     sucursal_nombre = None
     if sucursal_id:
@@ -80,12 +101,85 @@ def modulo_rentas():
         if row:
             sucursal_nombre = row[0]
 
+    def calcular_estado_entrega(renta):
+        """Calcula el estado de entrega de una renta (solo indicadores adicionales)"""
+
+        print(f"=== DEBUG RENTA {renta[0]} ===")
+        print(f"fecha_entrada: {renta[3]} (tipo: {type(renta[3])})")
+        print(f"tiene_nota_entrada: {renta[15]} (tipo: {type(renta[15])})")
+        print(f"estado_renta: {renta[4]}")
+
+        # Si no tiene fecha de entrada definida, no mostrar indicador
+        if not renta[3]:  # fecha_entrada
+            print("❌ No tiene fecha de entrada")
+            return None
+        
+        # Si ya tiene nota de entrada, no mostrar indicador (ya está finalizada)
+        if renta[15]:  # ← CAMBIO: índice 15 (tiene_nota_entrada)
+            print(f"❌Ya tiene nota de entrada: {renta[15]}")
+            return None
+        
+        # Si el estado de la renta no es 'Activo', no mostrar indicador
+        if renta[4] != 'Activo':  # estado_renta
+            print(f"❌ Estado no es Activo: {renta[4]}")
+            return None
+
+        print("✅ Pasó todas las validaciones!")
+        
+        fecha_entrada = renta[3]  # fecha_entrada
+        fecha_limite = renta[16]  # ← CAMBIO: índice 16 (fecha_limite_entrega)
+        ahora = datetime.now()
+
+        print(f"fecha_entrada: {fecha_entrada}")
+        print(f"fecha_limite: {fecha_limite}")
+        print(f"ahora: {ahora}")
+        print(f"ahora.date(): {ahora.date()}")
+        print(f"Comparación ahora.date() >= fecha_entrada: {ahora.date() >= fecha_entrada}")
+    
+        
+        # Solo mostrar indicadores para rentas ACTIVAS con fechas específicas
+        if fecha_limite:
+            fecha_limite_con_hora = datetime.combine(fecha_limite, datetime.strptime('10:00', '%H:%M').time())
+            print(f"fecha_limite_con_hora: {fecha_limite_con_hora}")
+            print(f"Comparación ahora > fecha_limite_con_hora: {ahora > fecha_limite_con_hora}")
+
+            # Si ya pasó la fecha y hora límite = VENCIDA
+            if ahora > fecha_limite_con_hora:
+                print("🔴 ESTADO: VENCIDA")
+                return {
+                    'estado': 'vencida',
+                    'clase': 'badge-vencida',
+                    'texto': 'Vencida'
+                }
+            
+            # Si llegó a la fecha de entrada pero no ha pasado la hora límite = POR REGRESAR
+            elif ahora.date() >= fecha_entrada:
+                print("🟡 ESTADO: POR REGRESAR")
+                return {
+                    'estado': 'por_regresar',
+                    'clase': 'badge-por-regresar',
+                    'texto': 'Por regresar'
+                }
+            else:
+                print(f"⏳ Aún no llega la fecha. Hoy: {ahora.date()}, Fecha entrada: {fecha_entrada}")
+        
+        # En cualquier otro caso, no mostrar indicador adicional
+        print("❌ No cumple condiciones para indicador")
+        return None
+
+    # Aplicar la función a todas las rentas
+    rentas_con_estado = []
+    for renta in rentas:
+        estado_entrega = calcular_estado_entrega(renta)
+        renta_lista = list(renta) + [estado_entrega]
+        rentas_con_estado.append(renta_lista)
+
     cursor.close()
     conn.close()
 
     return render_template(
         'rentas/index.html',
-        rentas=rentas,
+        rentas=rentas_con_estado,
         clientes=clientes,
         productos=productos,
         productos_por_renta=productos_por_renta,
@@ -93,9 +187,6 @@ def modulo_rentas():
         precios_productos=precios_productos,
         sucursal_id=sucursal_id 
     )
-
-
-
 
 
 
@@ -275,3 +366,98 @@ def cerrar_renta(renta_id):
     return redirect(url_for('rentas.modulo_rentas'))
 
 
+
+
+###################################
+###################################
+###################################
+############## DETALLES DE LA RENTA - VISUALIZACIÓN DETALLES 
+
+@rentas_bp.route('/detalle/<int:renta_id>')
+def obtener_detalle_renta(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Datos principales de la renta
+        cursor.execute("""
+            SELECT r.*, 
+                   CONCAT(c.nombre, ' ', c.apellido1, ' ', c.apellido2) AS cliente_nombre,
+                   c.codigo_cliente, c.telefono, c.correo, c.rfc,
+                   c.calle, c.numero_exterior, c.numero_interior, c.entre_calles,
+                   c.colonia, c.codigo_postal, c.municipio, c.estado
+            FROM rentas r
+            JOIN clientes c ON r.cliente_id = c.id
+            WHERE r.id = %s
+        """, (renta_id,))
+        renta = cursor.fetchone()
+        
+        if not renta:
+            return jsonify({'error': 'Renta no encontrada'}), 404
+        
+        # Productos de la renta
+        cursor.execute("""
+            SELECT p.nombre, rd.cantidad, rd.dias_renta, rd.costo_unitario, rd.subtotal
+            FROM renta_detalle rd
+            JOIN productos p ON rd.id_producto = p.id_producto
+            WHERE rd.renta_id = %s
+        """, (renta_id,))
+        productos = cursor.fetchall()
+        
+        # Calcular fecha límite de entrega
+        fecha_limite = "INDEFINIDA"
+        if renta['fecha_entrada']:
+            from datetime import timedelta
+            fecha_limite_obj = renta['fecha_entrada'] + timedelta(days=1)
+            fecha_limite = f"{fecha_limite_obj.strftime('%d/%m/%Y')} antes de las 9:00 a.m."
+        
+        # Formatear dirección completa del cliente
+        direccion_cliente = renta['calle'] or ''
+        if renta['numero_exterior']:
+            direccion_cliente += f" #{renta['numero_exterior']}"
+        if renta['numero_interior']:
+            direccion_cliente += f", Int. {renta['numero_interior']}"
+        if renta['entre_calles']:
+            direccion_cliente += f" (entre {renta['entre_calles']})"
+        if renta['colonia']:
+            direccion_cliente += f", COL. {renta['colonia']}"
+        if renta['codigo_postal']:
+            direccion_cliente += f" - C.P. {renta['codigo_postal']}"
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'renta': {
+                'id': renta['id'],
+                'fecha_registro': renta['fecha_registro'].strftime('%d/%m/%Y %H:%M:%S'),
+                'fecha_salida': renta['fecha_salida'].strftime('%d/%m/%Y') if renta['fecha_salida'] else 'No definida',
+                'fecha_entrada': renta['fecha_entrada'].strftime('%d/%m/%Y') if renta['fecha_entrada'] else 'Indefinida',
+                'estado_renta': renta['estado_renta'],
+                'estado_pago': renta['estado_pago'],
+                'metodo_pago': renta['metodo_pago'] or 'No definido',
+                'direccion_obra': renta['direccion_obra'],
+                'traslado': renta['traslado'] or 'Ninguno',
+                'costo_traslado': float(renta['costo_traslado'] or 0),
+                'iva': float(renta['iva'] or 0),
+                'total': float(renta['total_con_iva'] or 0),
+                'observaciones': renta['observaciones'],
+                'fecha_limite': fecha_limite
+            },
+            'cliente': {
+                'codigo': renta['codigo_cliente'],
+                'nombre': renta['cliente_nombre'],
+                'telefono': renta['telefono'] or 'No registrado',
+                'email': renta['correo'] or 'No registrado',
+                'rfc': renta['rfc'] or 'No registrado',
+                'direccion': direccion_cliente
+            },
+            'productos': productos
+        })
+        
+    except Exception as e:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        return jsonify({'error': str(e)}), 500
