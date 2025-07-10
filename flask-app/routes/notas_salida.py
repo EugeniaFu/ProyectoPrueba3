@@ -459,3 +459,24 @@ def generar_pdf_nota_salida(nota_salida_id):
         if conn:
             conn.close()
         return f"Error al generar PDF: {str(e)}", 500
+    
+@notas_salida_bp.route('/pdf_renta/<int:renta_id>')
+def generar_pdf_nota_salida_por_renta(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id FROM notas_salida 
+        WHERE renta_id = %s 
+        ORDER BY id DESC 
+        LIMIT 1
+    """, (renta_id,))
+    
+    nota = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not nota:
+        return f"No hay nota de salida para la renta {renta_id}", 404
+
+    return redirect(url_for('notas_salida.generar_pdf_nota_salida', nota_salida_id=nota['id']))
