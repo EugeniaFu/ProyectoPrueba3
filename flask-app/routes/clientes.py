@@ -117,9 +117,18 @@ def editar_cliente(id):
         if ids_eliminar:
             for doc_id in ids_eliminar:
                 cursor.execute("DELETE FROM documentos_cliente WHERE id=%s AND cliente_id=%s", (doc_id, id))
+        
+            # Actualizar tipo_documento de documentos existentes
+            for key in request.form:
+                if key.startswith('tipo_documento_existente_'):
+                    doc_id = key.replace('tipo_documento_existente_', '')
+                    nuevo_tipo = request.form[key]
+                    cursor.execute("""
+                        UPDATE documentos_cliente SET tipo_documento=%s WHERE id=%s AND cliente_id=%s
+                    """, (nuevo_tipo, doc_id, id))
 
         # Subir nuevos documentos
-        archivos = request.files.getlist('documentos')
+        archivos = [f for f in request.files.getlist('documentos') if f and f.filename]
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'clientes')
         os.makedirs(upload_folder, exist_ok=True)
         for idx, archivo in enumerate(archivos):
@@ -127,11 +136,13 @@ def editar_cliente(id):
                 filename = secure_filename(archivo.filename)
                 ruta = os.path.join(upload_folder, filename)
                 archivo.save(ruta)
-                tipo_documento = request.form.get(f"tipo_documento_{idx}", "otro")
+                for idx, archivo in enumerate(archivos):
+                    tipo_documento = request.form.get(f"tipo_documento_{idx}", "otro")
                 cursor.execute("""
                     INSERT INTO documentos_cliente (cliente_id, tipo_documento, archivo)
                     VALUES (%s, %s, %s)
                 """, (id, tipo_documento, filename))
+
 
         conn.commit()
         flash("Cliente actualizado correctamente.", "success")
