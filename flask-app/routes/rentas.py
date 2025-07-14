@@ -289,9 +289,25 @@ def crear_renta():
     return redirect(url_for('rentas.modulo_rentas'))
 
 
+# Actualizar fecha de entrada de una renta
+@rentas_bp.route('/actualizar_fecha_entrada/<int:renta_id>', methods=['POST'])
+def actualizar_fecha_entrada(renta_id):
+    try:
+        nueva_fecha = request.json.get('fecha_entrada')
+        if not nueva_fecha:
+            return jsonify({'success': False, 'error': 'Fecha de entrada no proporcionada'}), 400
 
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE rentas SET fecha_entrada = %s WHERE id = %s", (nueva_fecha, renta_id))
+        conn.commit()
 
-
+        return jsonify({'success': True, 'message': 'Fecha de entrada actualizada correctamente'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
 

@@ -16,14 +16,25 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('nota-entrada-fecha-limite').textContent = '---';
             document.getElementById('nota-entrada-piezas').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
 
+            const btnGenerar = document.getElementById('btn-generar-nota-entrada');
+            if (btnGenerar) {
+                btnGenerar.disabled = true;
+                btnGenerar.classList.add('disabled');
+            }
+
             fetch(`/notas_entrada/preview/${rentaId}`)
                 .then(resp => resp.json())
                 .then(data => {
                     if (data.error) {
                         document.getElementById('nota-entrada-piezas').innerHTML = `<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`;
+                        if (btnGenerar) {
+                            btnGenerar.disabled = true;
+                            btnGenerar.classList.add('disabled');
+                        }
                         return;
                     }
-                    
+
+                    // Llenar campos de info general
                     document.getElementById('nota-entrada-folio').textContent = data.folio;
                     document.getElementById('nota-entrada-fecha').textContent = data.fecha;
                     document.getElementById('nota-entrada-cliente').textContent = data.cliente;
@@ -31,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('nota-entrada-direccion').textContent = data.direccion_obra;
                     document.getElementById('nota-entrada-fecha-limite').textContent = data.fecha_limite;
 
-                    // Mostrar alerta de retraso si aplica
+                    // Mostrar alerta si hay retraso
                     const alertRetraso = document.getElementById('alerta-retraso');
                     if (data.hay_retraso) {
                         alertRetraso.style.display = 'block';
@@ -65,9 +76,20 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </tr>
                             `;
                         });
+
+                        // ✅ Habilitar botón porque hay piezas
+                        if (btnGenerar) {
+                            btnGenerar.disabled = false;
+                            btnGenerar.classList.remove('disabled');
+                        }
                     } else {
                         piezasHtml = '<tr><td colspan="5" class="text-center text-muted">Sin piezas para devolver</td></tr>';
+                        if (btnGenerar) {
+                            btnGenerar.disabled = true;
+                            btnGenerar.classList.add('disabled');
+                        }
                     }
+
                     document.getElementById('nota-entrada-piezas').innerHTML = piezasHtml;
 
                     // Guardar datos globales
@@ -79,17 +101,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(err => {
                     document.getElementById('nota-entrada-piezas').innerHTML = '<tr><td colspan="5" class="text-danger">Error al cargar datos.</td></tr>';
+                    if (btnGenerar) {
+                        btnGenerar.disabled = true;
+                        btnGenerar.classList.add('disabled');
+                    }
                     console.error('Error:', err);
                 });
         }
     });
 
-    // Manejar cambio de estado de pieza (habilitar/deshabilitar costo de daño)
-    document.addEventListener('change', function(e) {
+    // Manejar cambio de estado de pieza
+    document.addEventListener('change', function (e) {
         if (e.target.classList.contains('estado-pieza')) {
             const idPieza = e.target.dataset.idPieza;
             const costoDañoInput = document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`);
-            
             if (e.target.value === 'dañada') {
                 costoDañoInput.disabled = false;
                 costoDañoInput.focus();
@@ -111,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando...';
 
             const rentaId = window.datosNotaEntrada.rentaId;
-            
+
             // Recopilar datos de piezas
             const piezas = [];
             document.querySelectorAll('.cantidad-recibida').forEach(input => {
@@ -146,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify(payload)
                 });
                 const json = await res.json();
-                
+
                 if (json.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalNotaEntrada'));
                     modal.hide();

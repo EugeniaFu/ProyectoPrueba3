@@ -147,7 +147,14 @@
                                             <div style="max-width: 220px; overflow: hidden;">
                                                 <a href="{{ url_for('static', filename='uploads/clientes/' ~ doc.archivo) }}"
                                                     target="_blank" style="text-decoration:none;">
-                                                    <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                    {% set extension = doc.archivo.split('.')[-1].lower() %}
+                                                        {% if extension == 'pdf' %}
+                                                            <i class="bi bi-file-earmark-pdf text-danger"></i>
+                                                        {% elif extension in ['jpg', 'jpeg', 'png'] %}
+                                                            <i class="bi bi-file-earmark-image" style="color: var(--color-uacam-primary);"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-file-earmark text-secondary"></i>
+                                                        {% endif %}
                                                     <span class="fw-bold text-truncate"
                                                         style="max-width: 160px; display: inline-block; vertical-align: middle;"
                                                         title="{{ doc.archivo }}">
