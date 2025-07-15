@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotizaciones{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cotizaciones.css') }}">
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+</div>
+{% endfor %}
+<script>
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        });
+    }, 3000);
+</script>
+{% endif %}
+{% endwith %}
+
+<div class="container-fluid py-4">
+    <div class="cotizaciones-box-container">
+        <div class="cotizaciones-section-header d-flex justify-content-between align-items-center mb-3">
+            <h2 class="cotizaciones-section-title">
+                <i class="bi bi-calculator"></i> Módulo de Cotizaciones
+            </h2>
+            <a href="#" class="btn btn-cotizaciones-main" data-bs-toggle="modal" data-bs-target="#modalNuevaCotizacion">
+                <i class="bi bi-plus-lg"></i> Nueva Cotización
+            </a>
+        </div>
+
+        <!-- Navegación entre Rentas y Cotizaciones -->
+        <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
+
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('rentas.modulo_rentas') }}" class="btn btn-tab">
+                    <i class="bi bi-file-earmark-medical me-1"></i>Rentas
+                </a>
+                <a href="{{ url_for('cotizaciones.index') }}" class="btn btn-tab active">
+                    <i class="bi bi-calculator me-1"></i>Cotizaciones
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros de búsqueda -->
+        <form method="get" class="d-flex flex-wrap align-items-center mb-3 gap-2">
+            <input type="text" class="search-cotizaciones-box" name="busqueda" placeholder="Buscar cotización...">
+            <select class="form-select" name="filtro" style="max-width:200px;">
+                <option value="">Filtrar cotizaciones</option>
+                <option value="enviada">Enviada</option>
+                <option value="vencida">Vencida</option>
+                <option value="renta">Convertida a Renta</option>
+            </select>
+            <button type="submit" class="btn btn-cotizaciones-filter">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            <a href="#" class="btn btn-cotizaciones-filter">Dashboard</a>
+        </form>
+
+        <!-- Tabla de cotizaciones -->
+        <div class="table-responsive">
+            <table id="tablaCotizaciones" class="table table-cotizaciones align-middle">
+                <thead>
+                    <tr>
+                        <th>N° Cotización</th>
+                        <th>Cliente</th>
+                        <th>Contacto</th>
+                        <th>Productos</th>
+                        <th>Días de Renta</th>
+                        <th>Traslado</th>
+
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Fecha Creación</th>
+                        <th>Vigencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- En la sección donde muestras las cotizaciones, cambia: -->
+                    {% for cotizacion in cotizaciones %}
+                    <tr>
+                        <td><strong>COT-{{ cotizacion.numero_cotizacion }}</strong></td>
+                        <td>
+                            <div>
+                                <strong>{{ cotizacion.cliente_nombre }}</strong>
+                                {% if cotizacion.cliente_empresa %}
+                                <br><small class="text-muted">{{ cotizacion.cliente_empresa }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <small><i class="bi bi-telephone"></i> {{ cotizacion.cliente_telefono }}</small>
+                                {% if cotizacion.cliente_email %}
+                                <br><small><i class="bi bi-envelope"></i> {{ cotizacion.cliente_email }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Columna de productos -->
+                        <td>
+                            <div class="productos-lista">
+                                {% if productos_por_cotizacion.get(cotizacion.id) %}
+                                {% set productos_list = productos_por_cotizacion[cotizacion.id] %}
+                                {% if productos_list|length > 2 %}
+                                <span class="tooltip-producto" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    data-bs-html="true"
+                                    title="{% for item in productos_list %}<div class='mb-1'>• {{ item.nombre }} ({{ item.cantidad }})</div>{% endfor %}">
+                                    <span class="producto-item">{{ productos_list[0].nombre }}</span>
+                                    <span class="producto-item">{{ productos_list[1].nombre }}</span>
+                                    <small class="text-muted">+{{ productos_list|length - 2 }} más...</small>
+                                </span>
+                                {% else %}
+                                {% for item in productos_list %}
+                                <span class="producto-item">{{ item.nombre }} ({{ item.cantidad }})</span>
+                                {% endfor %}
+                                {% endif %}
+                                {% else %}
+                                <small class="text-muted">Sin productos</small>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info">{{ cotizacion.dias_renta }} días</span>
+                        </td>
+
+                        <td>
+                            {% if cotizacion.requiere_traslado %}
+                            <div>
+                                <span class="badge bg-warning">
+                                    {% if cotizacion.tipo_traslado == 'medio' %}
+                                    <i class="bi bi-arrow-right"></i> Medio
+                                    {% elif cotizacion.tipo_traslado == 'redondo' %}
+                                    <i class="bi bi-arrow-left-right"></i> Redondo
+                                    {% endif %}
+                                </span>
+                                {% if cotizacion.costo_traslado %}
+                                <br><small class="text-muted">${{ '%.2f'|format(cotizacion.costo_traslado) }}</small>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted">No requiere</span>
+                            {% endif %}
+                        </td>
+
+
+                        <td><strong>${{ '%.2f'|format(cotizacion.total) }}</strong></td>
+
+                        <td>
+                            <span class="badge bg-{{
+        'primary' if cotizacion.estado == 'enviada' 
+        else 'danger' if cotizacion.estado == 'vencida' 
+        else 'success' if cotizacion.estado == 'renta' 
+        else 'secondary' }}">
+                                {{ cotizacion.estado.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+
+                        <td><small>{{ cotizacion.fecha_creacion.strftime('%d/%m/%Y') }}</small></td>
+
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span>{{ cotizacion.fecha_vigencia.strftime('%d/%m/%Y') }}</span>
+                                {% if cotizacion.dias_para_vencer %}
+                                <span class="badge {{ 
+        'bg-danger' if cotizacion.dias_para_vencer <= 0 
+        else 'bg-warning' if cotizacion.dias_para_vencer <= 3 
+        else 'bg-success' }} mt-1" style="font-size: 0.7rem;">
+                                    {% if cotizacion.dias_para_vencer <= 0 %} Vencida {% elif
+                                        cotizacion.dias_para_vencer==1 %} Vence hoy {% else %} {{
+                                        cotizacion.dias_para_vencer }} días {% endif %} </span>
+                                        {% endif %}
+                            </div>
+                        </td>
+
+
+
+                        <!-- Columna de acciones -->
+                        <td>
+                            <div class="d-flex actions justify-content-center gap-1">
+
+                                <!-- Botón de Acciones -->
+                                <div class="dropdown dropup">
+                                    <button
+                                        class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle"
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        data-bs-toggle="tooltip" title="Opciones de la cotización">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><i
+                                                    class="bi bi-pencil me-2"></i>Editar</a></li>
+                                        <li><a class="dropdown-item" href="#"><i
+                                                    class="bi bi-files me-2"></i>Duplicar</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="bi bi-send me-2"></i>Enviar al
+                                                cliente</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item btn-ver-detalle" href="#"
+                                                data-cotizacion-id="{{ cotizacion.id }}">
+                                                <i class="bi bi-eye me-2"></i>Ver Detalles
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Botón de PDF -->
+                                <div class="dropdown dropup">
+                                    <button
+                                        class="btn btn-sm btn-success dropdown-toggle no-caret rounded rounded-circle"
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        data-bs-toggle="tooltip" title="Descargar PDF">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="/cotizaciones/pdf/{{ cotizacion.id }}"
+                                                target="_blank">
+                                                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Descargar PDF
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="/cotizaciones/email/{{ cotizacion.id }}">
+                                                <i class="bi bi-envelope me-2 text-primary"></i>Enviar por email
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Botón de Estado -->
+                                <div class="dropdown dropup">
+                                    <button
+                                        class="btn btn-sm btn-warning text-dark dropdown-toggle no-caret rounded rounded-circle"
+                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                        data-bs-toggle="tooltip" title="Cambiar estado">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"
+                                                onclick="cambiarEstado({{ cotizacion.id }}, 'enviada')">
+                                                <i class="bi bi-send me-2 text-primary"></i>Marcar como enviada</a></li>
+                                        <li><a class="dropdown-item" href="#"
+                                                onclick="cambiarEstado({{ cotizacion.id }}, 'vencida')">
+                                                <i class="bi bi-clock-history me-2 text-danger"></i>Marcar como
+                                                vencida</a></li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li><a class="dropdown-item" href="#"
+                                                onclick="convertirARenta({{ cotizacion.id }})">
+                                                <i class="bi bi-arrow-right me-2 text-success"></i>Convertir a renta</a>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <!-- Botón de Eliminar -->
+                                <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle"
+                                    type="button" data-bs-toggle="tooltip" title="Eliminar cotización">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div id="pagination-container" class="mt-3 d-flex justify-content-center"></div>
+        </div>
+    </div>
+</div>
+
+{% include 'cotizaciones/_modal_nueva_cotizacion.html' %}
+
+{% endblock %}
+
+
+
+
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializar todos los tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                trigger: 'hover focus',
+                delay: { show: 300, hide: 100 },
+                html: true,
+                placement: 'auto'
+            });
+        });
+
+        // Buscador en tiempo real
+        document.querySelector('.search-cotizaciones-box').addEventListener('keyup', function () {
+            var filtro = this.value.toLowerCase();
+            document.querySelectorAll('#tablaCotizaciones tbody tr').forEach(function (row) {
+                var texto = row.innerText.toLowerCase();
+                row.style.display = texto.includes(filtro) ? '' : 'none';
+            });
+        });
+    });
+</script>
+
+<script src="{{ url_for('static', filename='js/cotizaciones.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,191 @@
+<!-- Modal Nueva Cotización -->
+<div class="modal fade" id="modalNuevaCotizacion" tabindex="-1" aria-labelledby="modalNuevaCotizacionLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <form method="POST" action="{{ url_for('cotizaciones.crear_cotizacion') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalNuevaCotizacionLabel">
+            <i class="bi bi-calculator me-2"></i>Nueva Cotización
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <!-- Columna Izquierda: Información del Cliente y Detalles -->
+            <div class="col-md-6">
+              <!-- Información del Cliente -->
+              <div class="card mb-3">
+                <div class="card-header">
+                  <h6 class="mb-0"><i class="bi bi-person me-2"></i>Información del Cliente</h6>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label class="form-label">Nombre del Cliente *</label>
+                    <input type="text" class="form-control" name="cliente_nombre" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Número de Contacto *</label>
+                    <input type="tel" class="form-control" name="cliente_telefono" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email (Opcional)</label>
+                    <input type="email" class="form-control" name="cliente_email">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Empresa (Opcional)</label>
+                    <input type="text" class="form-control" name="cliente_empresa">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detalles de la Cotización -->
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0"><i class="bi bi-calendar me-2"></i>Detalles de la Cotización</h6>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3">
+                    <label class="form-label">Días de Renta *</label>
+                    <input type="number" class="form-control" name="dias_renta" id="dias_renta" min="1" value="1" required>
+                  </div>
+                  
+                  <div class="mb-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="requiere_traslado" id="requiere_traslado">
+                      <label class="form-check-label" for="requiere_traslado"> REQUIERE TRASLADO </label>
+                    </div>
+                  </div>
+                  <div class="mb-3" id="tipo_traslado_container" style="display: none;">
+                    <label class="form-label">Tipo de Traslado</label>
+                    <select class="form-select" name="tipo_traslado" id="tipo_traslado">
+                      <option value="medio">Medio (Solo ida)</option>
+                      <option value="redondo">Redondo (Ida y vuelta)</option>
+                    </select>
+                  </div>
+                  <div class="mb-3" id="costo_traslado_container" style="display: none;">
+                    <label class="form-label">Costo del Traslado</label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input type="number" class="form-control" name="costo_traslado" id="costo_traslado" step="0.01" min="0" placeholder="0.00">
+                      <button type="button" class="btn btn-success" id="agregar_traslado" disabled>
+                        <i class="bi bi-plus"></i> Agregar
+                      </button>
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <div class="alert alert-info">
+                      <i class="bi bi-info-circle me-2"></i>
+                      <strong>Vigencia:</strong> Esta cotización será válida por 7 días a partir de su creación.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Productos y Totales -->
+            <div class="col-md-6">
+              <!-- Selección de Productos -->
+              <div class="card mb-3">
+                <div class="card-header">
+                  <h6 class="mb-0"><i class="bi bi-box me-2"></i>Agregar Productos</h6>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-8">
+                      <label class="form-label">Producto</label>
+                      <select class="form-select" id="producto_select">
+                        <option value="">Seleccionar producto...</option>
+                        {% for producto in productos %}
+                        <option value="{{ producto.id_producto }}">{{ producto.nombre }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Cantidad</label>
+                      <input type="number" class="form-control" id="cantidad_input" min="1" placeholder="0">
+                    </div>
+                  </div>
+                  <div class="row mt-2">
+                    <div class="col-md-6">
+                      <label class="form-label">Precio Unitario</label>
+                      <input type="number" class="form-control" id="precio_unitario" step="0.01" readonly>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Subtotal</label>
+                      <input type="number" class="form-control" id="subtotal_producto" step="0.01" readonly>
+                    </div>
+                  </div>
+                  <div class="mt-3">
+                    <button type="button" class="btn btn-success" id="agregar_producto" disabled>
+                      <i class="bi bi-plus"></i> Agregar Producto
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabla de Productos y Servicios -->
+              <div class="card">
+                <div class="card-header">
+                  <h6 class="mb-0"><i class="bi bi-list-ul me-2"></i>Productos y Servicios Cotizados</h6>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm" id="tabla_productos">
+                      <thead>
+                        <tr>
+                          <th>Concepto</th>
+                          <th>Cant.</th>
+                          <th>Días</th>
+                          <th>Precio Unit.</th>
+                          <th>Subtotal</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="productos_tbody">
+                        <!-- Los productos y servicios se agregarán aquí dinámicamente -->
+                      </tbody>
+                    </table>
+                    <div id="mensaje_sin_productos" class="text-center text-muted py-3">
+                      No hay productos ni servicios agregados
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Totales -->
+          <div class="row mt-4">
+            <div class="col-md-8"></div>
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between">
+                    <span>Subtotal:</span>
+                    <span id="subtotal-display">$0.00</span>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span>IVA (16%):</span>
+                    <span id="iva-display">$0.00</span>
+                  </div>
+                  <hr>
+                  <div class="d-flex justify-content-between fw-bold">
+                    <span>Total:</span>
+                    <span id="total-display">$0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos ocultos para envío -->
+          <div id="productos_hidden_inputs"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn_crear_cotizacion" disabled>Crear Cotización</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

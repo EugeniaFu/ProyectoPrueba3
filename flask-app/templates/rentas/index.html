@@ -37,6 +37,22 @@
       </a>
     </div>
 
+
+    <!-- Navegación entre Rentas y Cotizaciones -->
+    <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
+      
+      <div class="btn-group" role="group">
+        <a href="{{ url_for('rentas.modulo_rentas') }}" class="btn btn-tab active">
+          <i class="bi bi-file-earmark-medical me-1"></i>Rentas
+        </a>
+        <a href="{{ url_for('cotizaciones.index') }}" class="btn btn-tab">
+          <i class="bi bi-calculator me-1"></i>Cotizaciones
+        </a>
+      </div>
+    </div>
+
+
+
     <!-- Filtros de búsqueda -->
     <form method="get" class="d-flex flex-wrap align-items-center mb-3 gap-2">
       <input type="text" class="search-rentas-box" name="busqueda" placeholder="Buscar renta...">
@@ -123,13 +139,12 @@
                 <small class="text-warning">Indefinido</small>
               </div>
 
-                {% if not renta[3] %}
-                    <button class="btn btn-sm btn-outline-secondary btn-editar-fecha-entrada"
-                            data-renta-id="{{ renta[0] }}"
-                            title="Editar fecha de entrada">
-                        <i class="bi bi-calendar-check"></i>
-                    </button>
-                {% endif %}
+              {% if not renta[3] %}
+              <button class="btn btn-sm btn-outline-secondary btn-editar-fecha-entrada" data-renta-id="{{ renta[0] }}"
+                title="Editar fecha de entrada">
+                <i class="bi bi-calendar-check"></i>
+              </button>
+              {% endif %}
               {% endif %}
             </td>
 
@@ -323,60 +338,60 @@
     });
   });
 
-    document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', function () {
     const modalFechaEntrada = new bootstrap.Modal(document.getElementById('modalEditarFechaEntrada'));
-    
+
     // Abrir modal con rentaId cargado
     document.body.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-editar-fecha-entrada');
-        if (btn) {
-            const rentaId = btn.dataset.rentaId;
-            document.getElementById('renta-id-para-editar').value = rentaId;
-            document.getElementById('nueva-fecha-entrada').value = ''; // limpia fecha
-            modalFechaEntrada.show();
-        }
+      const btn = e.target.closest('.btn-editar-fecha-entrada');
+      if (btn) {
+        const rentaId = btn.dataset.rentaId;
+        document.getElementById('renta-id-para-editar').value = rentaId;
+        document.getElementById('nueva-fecha-entrada').value = ''; // limpia fecha
+        modalFechaEntrada.show();
+      }
     });
 
     // Enviar actualización
     document.getElementById('form-editar-fecha-entrada').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const rentaId = document.getElementById('renta-id-para-editar').value;
-        const fechaEntrada = document.getElementById('nueva-fecha-entrada').value;
+      e.preventDefault();
+      const rentaId = document.getElementById('renta-id-para-editar').value;
+      const fechaEntrada = document.getElementById('nueva-fecha-entrada').value;
 
-        if (!fechaEntrada) {
-            Swal.fire('Error', 'Debe seleccionar una fecha válida.', 'warning');
-            return;
-        }
+      if (!fechaEntrada) {
+        Swal.fire('Error', 'Debe seleccionar una fecha válida.', 'warning');
+        return;
+      }
 
-        fetch(`/rentas/actualizar_fecha_entrada/${rentaId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fecha_entrada: fechaEntrada })
-        })
+      fetch(`/rentas/actualizar_fecha_entrada/${rentaId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha_entrada: fechaEntrada })
+      })
         .then(async resp => {
-            const isJson = resp.headers.get('content-type')?.includes('application/json');
-            const data = isJson ? await resp.json() : null;
+          const isJson = resp.headers.get('content-type')?.includes('application/json');
+          const data = isJson ? await resp.json() : null;
 
-            if (!resp.ok) {
-                throw new Error(data?.error || `Error ${resp.status}`);
-            }
+          if (!resp.ok) {
+            throw new Error(data?.error || `Error ${resp.status}`);
+          }
 
-            if (data.success) {
-                Swal.fire('Éxito', data.message, 'success').then(() => {
-                    modalFechaEntrada.hide();
-                    window.location.reload();
-                });
-            } else {
-                Swal.fire('Error', data.error || 'No se pudo actualizar la fecha.', 'error');
-            }
+          if (data.success) {
+            Swal.fire('Éxito', data.message, 'success').then(() => {
+              modalFechaEntrada.hide();
+              window.location.reload();
+            });
+          } else {
+            Swal.fire('Error', data.error || 'No se pudo actualizar la fecha.', 'error');
+          }
         })
         .catch(err => {
-            console.error(err);
-            Swal.fire('Error', 'Error inesperado del servidor.', 'error');
+          console.error(err);
+          Swal.fire('Error', 'Error inesperado del servidor.', 'error');
         });
 
     });
-});
+  });
 </script>
 
 <script src="{{ url_for('static', filename='js/rentas.js') }}"></script>
