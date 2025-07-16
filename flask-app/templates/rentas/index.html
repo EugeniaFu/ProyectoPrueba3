@@ -40,7 +40,7 @@
 
     <!-- Navegación entre Rentas y Cotizaciones -->
     <div class="d-flex flex-wrap align-items-center mb-3 gap-2 justify-content-between">
-      
+
       <div class="btn-group" role="group">
         <a href="{{ url_for('rentas.modulo_rentas') }}" class="btn btn-tab active">
           <i class="bi bi-file-earmark-medical me-1"></i>Rentas
@@ -162,17 +162,23 @@
             </td>
 
             <td>
-              <span
-                class="badge bg-{{ 'success' if renta[4] == 'activo' else 'secondary' if renta[4] == 'en curso' else 'warning' }}">
+              <span class="badge bg-{{ 
+    'success' if renta[4] == 'activo' 
+    else 'dark' if renta[4] == 'finalizada' 
+    else 'secondary' if renta[4] == 'en curso' 
+    else 'warning' if renta[4] == 'programada' 
+    else 'primary' }}">
                 {{ renta[4].title() }}
               </span>
             </td>
+
             <td>
               <span
-                class="badge bg-{{ 'success' if renta[5] == 'pago realizado' else 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}">
+                class="badge {% if renta[5] == 'pago realizado' %}bg-success-custom{% else %}bg-{{ 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}{% endif %}">
                 {{ renta[5] }}
               </span>
             </td>
+
             <td><small>{{ renta[6] or 'N/A' }}</small></td>
             <td><strong>${{ '%.2f'|format(renta[7]) }}</strong></td>
 
@@ -308,7 +314,7 @@
 {% block scripts %}
 <script>
   window.preciosProductos = {{ precios_productos | tojson }};
-</script>
+</script> 
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {

@@ -103,7 +103,7 @@
 
 .table-rentas td .text-primary {
     font-size: 0.8rem !important;
-    color: #0d6efd !important;
+    color: #14d668 !important;
 }
 
 .table-rentas tr:nth-child(even) td {
@@ -134,32 +134,40 @@
     font-weight: 600;
 }
 
-/* Estados específicos con colores correctos */
-.table-rentas .badge.bg-warning { 
-    background-color: #05b51c !important; /* NARANJA */
-    color: #ffffff !important; 
-}
-.table-rentas .badge.bg-danger { 
-    background-color: #de1428 !important; /* ROJO */
-    color: #ffffff !important; 
-}
+/* ESTADOS ESPECÍFICOS DE RENTA */
 .table-rentas .badge.bg-success { 
-    background-color: #198754 !important; 
+    background-color: #198754 !important; /* VERDE para ACTIVO */
     color: #ffffff !important; 
 }
-.table-rentas .badge.bg-primary { 
-    background-color: #0d6efd !important; 
+.table-rentas .badge.bg-dark { 
+    background-color: #212529 !important; /* NEGRO para FINALIZADA */
     color: #ffffff !important; 
 }
 .table-rentas .badge.bg-secondary { 
-    background-color: #6c757d !important; 
+    background-color: #6c757d !important; /* GRIS para EN CURSO */
     color: #ffffff !important; 
 }
+.table-rentas .badge.bg-warning { 
+    background-color: #ffc107 !important; /* AMARILLO para PROGRAMADA */
+    color: #000000 !important; 
+}
+
+/* ESTADOS DE PAGO */
+.table-rentas .badge.bg-danger { 
+    background-color: #dc3545 !important; 
+    color: #ffffff !important; 
+}
+.table-rentas .badge.bg-success-custom { 
+    background-color: #198754 !important; /* VERDE para pago realizado */
+    color: #ffffff !important; 
+}
+
+
 
 
 /* --- ESTADOS ESPECÍFICOS DE ENTREGA --- */
 .badge-por-regresar {
-    background-color: #eb8f04 !important; /* NARANJA */
+    background-color: #eb8f04 !important; 
     color: #ffffff !important;
     font-size: 0.7rem !important;
     padding: 0.25em 0.6em;
@@ -179,7 +187,6 @@
     font-weight: 600;
     border: none;
 }
-
 
 /* --- ACCIONES --- */
 .actions .btn {

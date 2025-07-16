@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     let productosAgregados = [];
     let trasladoAgregado = null;
     let productoCounter = 0;
@@ -24,8 +24,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Establecer valor inicial de días
     diasRentaInput.value = 1;
 
+    // ===============================================
+    // INICIALIZAR TOOLTIPS
+    // ===============================================
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus',
+            delay: { show: 300, hide: 100 },
+            html: true,
+            placement: 'auto'
+        });
+    });
+
+    // ===============================================
+    // BUSCADOR EN TIEMPO REAL
+    // ===============================================
+    const searchBox = document.querySelector('.search-cotizaciones-box');
+    if (searchBox) {
+        searchBox.addEventListener('keyup', function () {
+            var filtro = this.value.toLowerCase();
+            document.querySelectorAll('#tablaCotizaciones tbody tr').forEach(function (row) {
+                var texto = row.innerText.toLowerCase();
+                row.style.display = texto.includes(filtro) ? '' : 'none';
+            });
+        });
+    }
+
+    // ===============================================
+    // LÓGICA DEL MODAL DE NUEVA COTIZACIÓN
+    // ===============================================
+
     // Mostrar/ocultar campos de traslado
-    requiereTrasladoCheck.addEventListener('change', function() {
+    requiereTrasladoCheck.addEventListener('change', function () {
         if (this.checked) {
             tipoTrasladoContainer.style.display = 'block';
             costoTrasladoContainer.style.display = 'block';
@@ -43,12 +74,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validar formulario de traslado
     function validarFormularioTraslado() {
-        const valido = requiereTrasladoCheck.checked && 
-                      tipoTrasladoSelect.value && 
-                      costoTrasladoInput.value && 
-                      parseFloat(costoTrasladoInput.value) > 0 &&
-                      !trasladoAgregado;
-        
+        const valido = requiereTrasladoCheck.checked &&
+            tipoTrasladoSelect.value &&
+            costoTrasladoInput.value &&
+            parseFloat(costoTrasladoInput.value) > 0 &&
+            !trasladoAgregado;
+
         agregarTrasladoBtn.disabled = !valido;
     }
 
@@ -57,12 +88,12 @@ document.addEventListener('DOMContentLoaded', function() {
     costoTrasladoInput.addEventListener('input', validarFormularioTraslado);
 
     // Agregar traslado a la tabla
-    agregarTrasladoBtn.addEventListener('click', function() {
+    agregarTrasladoBtn.addEventListener('click', function () {
         const tipoTraslado = tipoTrasladoSelect.value;
         const costoTraslado = parseFloat(costoTrasladoInput.value);
-        
+
         const conceptoTraslado = `TRASLADO ${tipoTraslado.toUpperCase()}`;
-        
+
         // Crear objeto de traslado
         trasladoAgregado = {
             tipo: 'traslado',
@@ -70,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tipo_traslado: tipoTraslado,
             costo: costoTraslado
         };
-        
+
         // Agregar fila a la tabla (solo concepto y precio para traslado)
         const fila = document.createElement('tr');
         fila.setAttribute('data-tipo', 'traslado');
@@ -85,13 +116,13 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
         `;
         productosTableBody.appendChild(fila);
-        
+
         // Deshabilitar el botón
         agregarTrasladoBtn.disabled = true;
-        
+
         // Ocultar mensaje sin productos
         mensajeSinProductos.style.display = 'none';
-        
+
         // Recalcular totales
         calcularTotales();
         actualizarHiddenInputs();
@@ -99,24 +130,24 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Eliminar traslado
-    window.eliminarTraslado = function() {
+    window.eliminarTraslado = function () {
         // Remover de la tabla
         const fila = document.querySelector('tr[data-tipo="traslado"]');
         if (fila) {
             fila.remove();
         }
-        
+
         // Limpiar objeto
         trasladoAgregado = null;
-        
+
         // Mostrar mensaje si no hay productos
         if (productosAgregados.length === 0) {
             mensajeSinProductos.style.display = 'block';
         }
-        
+
         // Habilitar botón de agregar traslado
         validarFormularioTraslado();
-        
+
         // Recalcular totales
         calcularTotales();
         actualizarHiddenInputs();
@@ -124,10 +155,10 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Cuando cambie el producto seleccionado
-    productoSelect.addEventListener('change', function() {
+    productoSelect.addEventListener('change', function () {
         const productoId = this.value;
         const diasRenta = parseInt(diasRentaInput.value) || 1;
-        
+
         if (productoId && diasRenta) {
             // Obtener precio automáticamente
             fetch(`/cotizaciones/precios/${productoId}/${diasRenta}`)
@@ -147,9 +178,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Cuando cambien los días de renta
-    diasRentaInput.addEventListener('change', function() {
+    diasRentaInput.addEventListener('change', function () {
         const diasRenta = parseInt(this.value) || 1;
-        
+
         // Actualizar precios de productos existentes
         productosAgregados.forEach(producto => {
             if (producto.tipo === 'producto') {
@@ -161,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             producto.dias = diasRenta;
                             // Recalcular subtotal con la nueva fórmula
                             producto.subtotal = producto.cantidad * producto.precio_unitario * diasRenta;
-                            
+
                             // Actualizar en la tabla
                             const fila = document.querySelector(`tr[data-producto-id="${producto.producto_id}"]`);
                             if (fila) {
@@ -174,12 +205,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     .catch(error => console.error('Error:', error));
             }
         });
-        
+
         // Recalcular precio del producto seleccionado
         if (productoSelect.value) {
             productoSelect.dispatchEvent(new Event('change'));
         }
-        
+
         // Recalcular totales después de un pequeño delay
         setTimeout(() => {
             calcularTotales();
@@ -188,12 +219,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Cuando cambien los días de renta, también recalcular el subtotal del producto en selección
-    diasRentaInput.addEventListener('input', function() {
+    diasRentaInput.addEventListener('input', function () {
         calcularSubtotalProducto();
     });
 
     // Cuando cambie la cantidad
-    cantidadInput.addEventListener('input', function() {
+    cantidadInput.addEventListener('input', function () {
         calcularSubtotalProducto();
         validarFormularioProducto();
     });
@@ -209,16 +240,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validar formulario de producto
     function validarFormularioProducto() {
-        const valido = productoSelect.value && 
-                      cantidadInput.value && 
-                      parseFloat(cantidadInput.value) > 0 && 
-                      precioUnitarioInput.value;
-        
+        const valido = productoSelect.value &&
+            cantidadInput.value &&
+            parseFloat(cantidadInput.value) > 0 &&
+            precioUnitarioInput.value;
+
         agregarProductoBtn.disabled = !valido;
     }
 
     // Agregar producto a la tabla
-    agregarProductoBtn.addEventListener('click', function() {
+    agregarProductoBtn.addEventListener('click', function () {
         const productoId = productoSelect.value;
         const productoNombre = productoSelect.options[productoSelect.selectedIndex].text;
         const cantidad = parseFloat(cantidadInput.value);
@@ -228,12 +259,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Verificar si el producto ya existe
         const productoExistente = productosAgregados.find(p => p.producto_id === productoId);
-        
+
         if (productoExistente) {
             // Actualizar cantidad y subtotal
             productoExistente.cantidad += cantidad;
             productoExistente.subtotal = productoExistente.cantidad * productoExistente.precio_unitario * diasRenta;
-            
+
             // Actualizar en la tabla
             const fila = document.querySelector(`tr[data-producto-id="${productoId}"]`);
             fila.querySelector('.cantidad').textContent = productoExistente.cantidad;
@@ -250,9 +281,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 dias: diasRenta,
                 index: productoCounter++
             };
-            
+
             productosAgregados.push(producto);
-            
+
             // Agregar fila a la tabla
             const fila = document.createElement('tr');
             fila.setAttribute('data-producto-id', productoId);
@@ -280,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Ocultar mensaje sin productos
         mensajeSinProductos.style.display = 'none';
-        
+
         // Recalcular totales
         calcularTotales();
         actualizarHiddenInputs();
@@ -288,19 +319,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Eliminar producto
-    window.eliminarProducto = function(productoId) {
+    window.eliminarProducto = function (productoId) {
         // Remover del array
         productosAgregados = productosAgregados.filter(p => p.producto_id !== productoId);
-        
+
         // Remover de la tabla
         const fila = document.querySelector(`tr[data-producto-id="${productoId}"]`);
         fila.remove();
-        
+
         // Mostrar mensaje si no hay productos ni traslado
         if (productosAgregados.length === 0 && !trasladoAgregado) {
             mensajeSinProductos.style.display = 'block';
         }
-        
+
         // Recalcular totales
         calcularTotales();
         actualizarHiddenInputs();
@@ -310,17 +341,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Calcular totales
     function calcularTotales() {
         let subtotalTotal = 0;
-        
+
         // Sumar productos
         productosAgregados.forEach(producto => {
             subtotalTotal += producto.subtotal;
         });
-        
+
         // Sumar traslado
         if (trasladoAgregado) {
             subtotalTotal += trasladoAgregado.costo;
         }
-        
+
         const iva = subtotalTotal * 0.16;
         const total = subtotalTotal + iva;
 
@@ -333,13 +364,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Actualizar inputs ocultos
     function actualizarHiddenInputs() {
         productosHiddenInputs.innerHTML = '';
-        
+
         // Agregar productos
         productosAgregados.forEach((producto, index) => {
             productosHiddenInputs.innerHTML += `
                 <input type="hidden" name="productos[${index}][producto_id]" value="${producto.producto_id}">
                 <input type="hidden" name="productos[${index}][cantidad]" value="${producto.cantidad}">
                 <input type="hidden" name="productos[${index}][precio_unitario]" value="${producto.precio_unitario}">
+                <input type="hidden" name="productos[${index}][subtotal]" value="${producto.subtotal}">
             `;
         });
     }
@@ -350,35 +382,126 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCrearCotizacion.disabled = !valido;
     }
 
-    // Limpiar todo al cerrar el modal
-    document.getElementById('modalNuevaCotizacion').addEventListener('hidden.bs.modal', function() {
-        // Limpiar productos y traslado
-        productosAgregados = [];
-        trasladoAgregado = null;
-        productosTableBody.innerHTML = '';
-        mensajeSinProductos.style.display = 'block';
-        
-        // Limpiar formulario
-        document.querySelector('#modalNuevaCotizacion form').reset();
-        
-        // Restaurar valor inicial de días
-        diasRentaInput.value = 1;
-        
-        // Ocultar containers
-        tipoTrasladoContainer.style.display = 'none';
-        costoTrasladoContainer.style.display = 'none';
-        
-        // Resetear botones
-        agregarProductoBtn.disabled = true;
-        agregarTrasladoBtn.disabled = true;
-        btnCrearCotizacion.disabled = true;
-        
-        // Limpiar inputs ocultos
-        productosHiddenInputs.innerHTML = '';
-        
-        // Resetear totales
-        document.getElementById('subtotal-display').textContent = '$0.00';
-        document.getElementById('iva-display').textContent = '$0.00';
-        document.getElementById('total-display').textContent = '$0.00';
+    // Manejar el envío del formulario de nueva cotización
+    document.getElementById('modalNuevaCotizacion').addEventListener('submit', function (e) {
+        e.preventDefault(); // Prevenir el envío normal del formulario
+
+        const form = e.target;
+        const btnCrear = document.getElementById('btn_crear_cotizacion');
+
+        // Deshabilitar botón y mostrar loading
+        btnCrear.disabled = true;
+        btnCrear.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando cotización...';
+
+        // Enviar datos via fetch pero esperando JSON con la URL
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cerrar modal
+                    bootstrap.Modal.getInstance(document.getElementById('modalNuevaCotizacion')).hide();
+
+                    // Mostrar SweetAlert con opción de ver PDF
+                    Swal.fire({
+                        title: 'Cotización creada exitosamente',
+                        text: '¿Deseas ver el PDF de la cotización?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, ver PDF',
+                        cancelButtonText: 'Cerrar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Abrir PDF en nueva pestaña usando la URL permanente
+                            window.open(data.pdf_url, '_blank');
+                        }
+                    });
+
+                    // Recargar la página para mostrar la nueva cotización
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    Swal.fire('Error', data.error || 'Error al crear cotización', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Hubo un error al crear la cotización', 'error');
+            })
+            .finally(() => {
+                // Restaurar botón
+                btnCrear.disabled = false;
+                btnCrear.innerHTML = 'Crear Cotización';
+            });
     });
+
+
+
 });
+
+// ===============================================
+// FUNCIONES GLOBALES PARA CAMBIAR ESTADOS
+// ===============================================
+
+// Función para cambiar estado de cotización
+function cambiarEstado(cotizacionId, nuevoEstado) {
+    fetch(`/cotizaciones/${cotizacionId}/cambiar-estado`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            estado: nuevoEstado,
+            comentarios: `Estado cambiado a ${nuevoEstado}`
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Recargar la página para ver los cambios
+            } else {
+                alert('Error al cambiar el estado: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cambiar el estado');
+        });
+}
+
+// Función para convertir cotización a renta
+function convertirARenta(cotizacionId) {
+    if (confirm('¿Está seguro de que desea convertir esta cotización a renta?')) {
+        fetch(`/cotizaciones/${cotizacionId}/convertir-renta`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                estado: 'renta',
+                comentarios: 'Cotización convertida a renta'
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Cotización convertida a renta exitosamente');
+                    location.reload();
+                } else {
+                    alert('Error al convertir a renta: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al convertir a renta');
+            });
+    }
+}
+
+

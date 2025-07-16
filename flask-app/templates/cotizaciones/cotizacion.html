@@ -172,20 +172,14 @@
                         <td>
                             <div class="d-flex flex-column">
                                 <span>{{ cotizacion.fecha_vigencia.strftime('%d/%m/%Y') }}</span>
-                                {% if cotizacion.dias_para_vencer %}
-                                <span class="badge {{ 
-        'bg-danger' if cotizacion.dias_para_vencer <= 0 
-        else 'bg-warning' if cotizacion.dias_para_vencer <= 3 
-        else 'bg-success' }} mt-1" style="font-size: 0.7rem;">
-                                    {% if cotizacion.dias_para_vencer <= 0 %} Vencida {% elif
-                                        cotizacion.dias_para_vencer==1 %} Vence hoy {% else %} {{
-                                        cotizacion.dias_para_vencer }} días {% endif %} </span>
-                                        {% endif %}
+                                {% if cotizacion.estado_vigencia %}
+                                <span class="badge {{ cotizacion.estado_vigencia.clase }} mt-1"
+                                    style="font-size: 0.7rem;">
+                                    {{ cotizacion.estado_vigencia.texto }}
+                                </span>
+                                {% endif %}
                             </div>
                         </td>
-
-
-
                         <!-- Columna de acciones -->
                         <td>
                             <div class="d-flex actions justify-content-center gap-1">
@@ -251,7 +245,8 @@
                                     <ul class="dropdown-menu">
                                         <li><a class="dropdown-item" href="#"
                                                 onclick="cambiarEstado({{ cotizacion.id }}, 'enviada')">
-                                                <i class="bi bi-send me-2 text-primary"></i>Marcar como enviada</a></li>
+                                                <i class="bi bi-send me-2 text-primary"></i> Marcar como enviada </a>
+                                        </li>
                                         <li><a class="dropdown-item" href="#"
                                                 onclick="cambiarEstado({{ cotizacion.id }}, 'vencida')">
                                                 <i class="bi bi-clock-history me-2 text-danger"></i>Marcar como
