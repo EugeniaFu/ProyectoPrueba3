@@ -225,6 +225,11 @@
                         <i class="bi bi-file-earmark-pdf me-2 text-success"></i>Prefactura
                       </a>
                     </li>
+                    <li>
+                      <a class="dropdown-item" href="/notas_entrada/pdf_costo_extra_renta/{{ renta[0] }}" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-2 text-dark"></i>Nota de costo extra
+                      </a>
+                    </li>
                   </ul>
                 </div>
 
@@ -251,9 +256,11 @@
                     </li>
                     <li>
                       <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
-                        href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
-                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
-                        renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
+                        href="#"
+                        data-renta-id="{{ renta[0] }}"
+                        data-fecha-salida="{{ renta[2] }}"
+                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}"
+                        {% if renta[5]|lower == 'pago realizado' %}tabindex="-1" aria-disabled="true"{% endif %}>
                         <i class="bi bi-journal-check me-2 text-success"></i>Generar Prefactura
                       </a>
                     </li>

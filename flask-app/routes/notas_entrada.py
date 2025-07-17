@@ -101,6 +101,21 @@ def crear_nota_entrada(renta_id):
                 break
         if cobro_adicional > 0:
             estado = 'con_retraso' if 'retraso' in motivo_cobro.lower() else 'con_daños'
+        
+        if cobro_adicional > 0:
+            cursor.execute("SELECT IFNULL(MAX(folio), 0) + 1 AS siguiente_folio FROM notas_costo_extra")
+            folio_extra = str(cursor.fetchone()['siguiente_folio']).zfill(5)
+
+            cursor.execute("""
+                INSERT INTO notas_costo_extra (
+                    renta_id, nota_entrada_id, folio, monto, motivo, usuario_id
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+            """, (renta_id, nota_entrada_id, folio_extra, cobro_adicional, motivo_cobro, usuario_id))
+
+            nota_extra_id = cursor.lastrowid
+            pdf_extra_url = f"/notas_entrada/pdf_costo_extra/{nota_extra_id}"
+
+            cursor.execute("UPDATE notas_costo_extra SET pdf_url = %s WHERE id = %s", (pdf_extra_url, nota_extra_id))
 
         cursor.execute("""
             INSERT INTO notas_entrada (
@@ -304,10 +319,45 @@ def ver_detalle_nota_entrada(nota_entrada_id):
     cursor.close()
     conn.close()
 
-    if not nota_entrada:
+    if not nota_entrada: 
         return "Nota no encontrada", 404
 
     return render_template('detalle_nota.html', nota_entrada=nota_entrada)
+
+@notas_entrada_bp.route('/crear_costo_extra/<int:renta_id>', methods=['POST'])
+def crear_nota_costo_extra(renta_id):
+    data = request.get_json()
+    monto = float(data.get('monto', 0))
+    motivo = data.get('motivo', '')
+    usuario_id = 1  # De sesión, si aplica
+
+    if monto <= 0:
+        return jsonify({'success': False, 'error': 'Monto inválido'})
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT IFNULL(MAX(folio), 0) + 1 AS siguiente_folio FROM notas_costo_extra")
+        folio = str(cursor.fetchone()['siguiente_folio']).zfill(5)
+
+        cursor.execute("""
+            INSERT INTO notas_costo_extra (renta_id, folio, monto, motivo, usuario_id)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (renta_id, folio, monto, motivo, usuario_id))
+
+        nota_extra_id = cursor.lastrowid
+        pdf_url = f"/notas_entrada/pdf_costo_extra/{nota_extra_id}"
+
+        cursor.execute("UPDATE notas_costo_extra SET pdf_url = %s WHERE id = %s", (pdf_url, nota_extra_id))
+        conn.commit()
+
+        return jsonify({'success': True, 'id': nota_extra_id, 'folio': folio, 'pdf_url': pdf_url})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+    finally:
+        cursor.close()
+        conn.close()
 
 @notas_entrada_bp.route('/pdf_renta/<int:renta_id>')
 def generar_pdf_nota_entrada_por_renta(renta_id):
@@ -318,3 +368,103 @@ def generar_pdf_nota_entrada_por_renta(renta_id):
     if not nota:
         return f"No hay nota de entrada para la renta {renta_id}", 404
     return redirect(url_for('notas_entrada.generar_pdf_nota_entrada', nota_entrada_id=nota['id']))
+
+
+@notas_entrada_bp.route('/pdf_costo_extra/<int:nota_extra_id>')
+def generar_pdf_costo_extra(nota_extra_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT nce.folio, nce.fecha, nce.monto, nce.motivo, 
+                   c.nombre, c.apellido1, c.apellido2, c.telefono
+            FROM notas_costo_extra nce
+            JOIN rentas r ON nce.renta_id = r.id
+            JOIN clientes c ON r.cliente_id = c.id
+            WHERE nce.id = %s
+        """, (nota_extra_id,))
+        nota = cursor.fetchone()
+
+        if not nota:
+            return "Nota de costo extra no encontrada", 404
+
+        # === GENERAR PDF con diseño unificado ===
+        packet = BytesIO()
+        can = canvas.Canvas(packet, pagesize=letter)
+        width, height = letter
+
+        # Fuente personalizada si existe
+        try:
+            fuente_path = os.path.join(current_app.root_path, 'static/fonts/Carlito-Regular.ttf')
+            pdfmetrics.registerFont(TTFont('Carlito', fuente_path))
+            can.setFont("Carlito", 11)
+        except:
+            can.setFont("Helvetica", 11)
+
+        # Título
+        can.setFont("Helvetica-Bold", 16)
+        can.drawString(180, 760, "NOTA DE COSTO EXTRA")
+
+        # Datos generales
+        can.setFont("Helvetica", 11)
+        y = 730
+        can.drawString(40, y, f"Folio: {str(nota['folio']).zfill(5)}")
+        can.drawString(400, y, f"Fecha: {nota['fecha'].strftime('%d/%m/%Y %H:%M')}")
+        y -= 20
+        can.drawString(40, y, f"Cliente: {nota['nombre']} {nota['apellido1']} {nota['apellido2']}")
+        y -= 20
+        can.drawString(40, y, f"Teléfono: {nota['telefono']}")
+        y -= 30
+
+        # Detalles del costo extra
+        can.setFont("Helvetica-Bold", 11)
+        can.drawString(40, y, "Motivo del cobro:")
+        y -= 18
+        can.setFont("Helvetica", 11)
+        can.drawString(40, y, nota['motivo'] or "-")
+        y -= 30
+
+        can.setFont("Helvetica-Bold", 11)
+        can.drawString(40, y, f"Monto total a pagar: ${nota['monto']:.2f}")
+        y -= 40
+
+        # Pie de página
+        can.setFont("Helvetica", 8)
+        can.drawString(40, 40, "Este documento fue generado automáticamente por el sistema.")
+
+        can.save()
+        packet.seek(0)
+
+        return send_file(
+            packet,
+            download_name=f"nota_costo_extra_{str(nota['folio']).zfill(5)}.pdf",
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        return f"Error al generar PDF de costo extra: {str(e)}", 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@notas_entrada_bp.route('/pdf_costo_extra_renta/<int:renta_id>')
+def generar_pdf_nota_costo_extra_por_renta(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id FROM notas_costo_extra 
+        WHERE renta_id = %s 
+        ORDER BY id DESC 
+        LIMIT 1
+    """, (renta_id,))
+    
+    nota = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not nota:
+        return f"No hay nota de costo extra para la renta {renta_id}", 404
+
+    # 🔥 CORREGIDO AQUÍ
+    return redirect(url_for('notas_entrada.generar_pdf_costo_extra', nota_extra_id=nota['id']))

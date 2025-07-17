@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: 'warning',
                     title: 'No puedes generar la prefactura',
-                    text: 'Debes registrar primero la nota de entrada para esta renta indefinida.'
+                    text: 'Debes registrar primero la fecha de entrada para esta renta con valor indefinido.'
                 });
                 return;
             }

@@ -19,6 +19,12 @@
                     <strong>Cliente:</strong> <span id="nota-entrada-cliente">---</span><br>
                     <strong>Teléfono:</strong> <span id="nota-entrada-telefono">---</span>
                 </div>
+
+                <!-- Para rentas indefinidas -->
+                <div class="mb-3 d-none">
+                    <label for="fecha-entrada-real" class="form-label">Fecha real de entrada (solo para rentas indefinidas):</label>
+                    <input type="date" id="fecha-entrada-real" class="form-control">
+                </div>
                 
                 <!-- Dirección de obra -->
                 <div class="mb-2">
@@ -44,6 +50,10 @@
                     <div class="col-md-6">
                         <label for="motivo-cobro" class="form-label">Motivo del cobro:</label>
                         <input type="text" id="motivo-cobro" class="form-control" placeholder="Ej: Retraso, daños, etc.">
+                    </div>
+                    <!-- Total de cobros (retraso + daños) -->
+                    <div class="mb-2 text-end">
+                        <strong>Total a cobrar:</strong> $<span id="total-cobro-general">0.00</span>
                     </div>
                 </div>
 
@@ -73,6 +83,10 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <!-- Botón adicional para costo extra -->
+                <button type="button" class="btn btn-light" id="btn-generar-costo-extra" style="display: none;">
+                    <i class="bi bi-receipt"></i> Generar Nota de Costo Extra
+                </button>
                 <button type="submit" class="btn btn-success" id="btn-generar-nota-entrada">
                     <i class="bi bi-arrow-left-circle"></i> Generar Nota de Entrada
                 </button>
@@ -80,3 +94,133 @@
         </form>
     </div>
 </div>
+
+<!-- Modal de Costo Extra -->
+<div class="modal fade" id="modalCostoExtra" tabindex="-1" aria-labelledby="modalCostoExtraLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="form-costo-extra" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCostoExtraLabel">Generar Nota de Costo Extra</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Cliente:</strong> <span id="cliente-costo-extra">---</span></p>
+        <p><strong>Motivo:</strong> <span id="motivo-costo-extra">---</span></p>
+        <p><strong>Monto:</strong> $<span id="monto-costo-extra">0.00</span></p>
+        <input type="hidden" id="input-monto-extra" />
+        <input type="hidden" id="input-motivo-extra" />
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-warning">
+          <i class="bi bi-check-circle"></i> Confirmar y Generar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('btn-generar-costo-extra').addEventListener('click', () => {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCostoExtra'));
+    modal.show();
+
+    const cliente = document.getElementById('nota-entrada-cliente').textContent;
+
+    let montoTotal = 0;
+    let motivoFinal = [];
+
+    const cobroRetraso = parseFloat(document.getElementById('cobro-retraso').value) || 0;
+    if (cobroRetraso > 0) {
+        montoTotal += cobroRetraso;
+        motivoFinal.push('Retraso');
+    }
+
+    // Recorrer piezas dañadas o faltantes
+    document.querySelectorAll('.estado-pieza').forEach(select => {
+        const estado = select.value;
+        const idPieza = select.dataset.idPieza;
+        const piezaNombre = select.closest('tr').children[0].textContent;
+        const costo = parseFloat(document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`).value) || 0;
+
+        if ((estado === 'dañada' || estado === 'faltante') && costo > 0) {
+            montoTotal += costo;
+            motivoFinal.push(`${piezaNombre} ${estado}`);
+        }
+    });
+
+    const motivo = motivoFinal.length > 0 ? motivoFinal.join(', ') : '---';
+
+    document.getElementById('cliente-costo-extra').textContent = cliente;
+    document.getElementById('monto-costo-extra').textContent = montoTotal.toFixed(2);
+    document.getElementById('motivo-costo-extra').textContent = motivo;
+
+    document.getElementById('input-monto-extra').value = montoTotal;
+    document.getElementById('input-motivo-extra').value = motivo;
+});
+
+document.getElementById('form-costo-extra').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const monto = parseFloat(document.getElementById('input-monto-extra').value) || 0;
+    const motivo = document.getElementById('input-motivo-extra').value;
+    const rentaId = window.datosNotaEntrada.rentaId;
+
+    try {
+        const res = await fetch(`/notas_entrada/crear_costo_extra/${rentaId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                monto: monto,
+                motivo: motivo
+            })
+        });
+
+        const json = await res.json();
+        if (json.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCostoExtra'));
+            modal.hide();
+
+            Swal.fire({
+                title: 'Nota de Costo Extra generada',
+                text: `Folio: ${json.folio}. ¿Deseas imprimirla?`,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, imprimir',
+                cancelButtonText: 'No'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    window.open(`/notas_entrada/pdf_costo_extra/${json.id}`, '_blank');
+                }
+            });
+        } else {
+            Swal.fire('Error', json.error || 'No se pudo generar la nota de costo extra', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', 'Error al conectar con el servidor', 'error');
+    }
+});
+
+function calcularTotalCobro() {
+    let total = 0;
+
+    // Sumar cobro por retraso
+    const cobroRetraso = parseFloat(document.getElementById('cobro-retraso').value) || 0;
+    total += cobroRetraso;
+
+    // Sumar daños por pieza
+    document.querySelectorAll('.estado-pieza').forEach(select => {
+        const estado = select.value;
+        const idPieza = select.dataset.idPieza;
+        const costoInput = document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`);
+        const costo = parseFloat(costoInput.value) || 0;
+
+        if ((estado === 'dañada' || estado === 'faltante') && !costoInput.disabled) {
+            total += costo;
+        }
+    });
+
+    document.getElementById('total-cobro-general').textContent = total.toFixed(2);
+}
+
+</script>
