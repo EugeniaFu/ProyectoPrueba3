@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             btnGenerar.disabled = true;
                             btnGenerar.classList.add('disabled');
                         }
+
                         return;
                     }
 
@@ -41,6 +42,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('nota-entrada-telefono').textContent = data.telefono;
                     document.getElementById('nota-entrada-direccion').textContent = data.direccion_obra;
                     document.getElementById('nota-entrada-fecha-limite').textContent = data.fecha_limite;
+
+                    // Mostrar botón de nota de costo extra si hay cobro adicional
+                    if (data.cobro_retraso > 0) {
+                        document.getElementById('btn-generar-costo-extra').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('btn-generar-costo-extra').style.display = 'none';
+                    }
 
                     // Mostrar alerta si hay retraso
                     const alertRetraso = document.getElementById('alerta-retraso');
@@ -92,6 +100,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     document.getElementById('nota-entrada-piezas').innerHTML = piezasHtml;
 
+                    // Evaluar si hay algún motivo para generar costo extra
+                    let mostrarBotonCostoExtra = false;
+
+                    // Verificar si ya hay cobro por retraso
+                    if (parseFloat(data.cobro_retraso) > 0) {
+                        mostrarBotonCostoExtra = true;
+                    } else {
+                        // Evaluar piezas con daño o faltantes
+                        document.querySelectorAll('.estado-pieza').forEach(select => {
+                            const estado = select.value;
+                            const idPieza = select.dataset.idPieza;
+                            const costo = parseFloat(document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`).value) || 0;
+
+                            if ((estado === 'dañada' || estado === 'faltante') && costo > 0) {
+                                mostrarBotonCostoExtra = true;
+                            }
+                        });
+                    }
+
+                    document.getElementById('btn-generar-costo-extra').style.display = mostrarBotonCostoExtra ? 'inline-block' : 'none';
+
+
                     // Guardar datos globales
                     window.datosNotaEntrada = {
                         rentaId: rentaId,
@@ -112,19 +142,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Manejar cambio de estado de pieza
     document.addEventListener('change', function (e) {
-        if (e.target.classList.contains('estado-pieza')) {
+        if (e.target.classList.contains('estado-pieza') || e.target.classList.contains('costo-daño') || e.target.id === 'cobro-retraso') {
             const idPieza = e.target.dataset.idPieza;
-            const costoDañoInput = document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`);
-            if (e.target.value === 'dañada') {
-                costoDañoInput.disabled = false;
-                costoDañoInput.focus();
-            } else {
-                costoDañoInput.disabled = true;
-                costoDañoInput.value = '0';
+
+            // Habilitar/deshabilitar input de daño según el estado
+            if (e.target.classList.contains('estado-pieza')) {
+                const costoDañoInput = document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`);
+                if (e.target.value === 'dañada') {
+                    costoDañoInput.disabled = false;
+                    costoDañoInput.focus();
+                } else {
+                    costoDañoInput.disabled = true;
+                    costoDañoInput.value = '0';
+                }
             }
+
+            // Mostrar u ocultar botón de costo extra
+            let mostrar = false;
+
+            if (parseFloat(document.getElementById('cobro-retraso').value) > 0) {
+                mostrar = true;
+            } else {
+                document.querySelectorAll('.estado-pieza').forEach(select => {
+                    const estado = select.value;
+                    const id = select.dataset.idPieza;
+                    const costo = parseFloat(document.querySelector(`.costo-daño[data-id-pieza="${id}"]`).value) || 0;
+
+                    if ((estado === 'dañada' || estado === 'faltante') && costo > 0) {
+                        mostrar = true;
+                    }
+                });
+            }
+
+            document.getElementById('btn-generar-costo-extra').style.display = mostrar ? 'inline-block' : 'none';
+
+            // 🧮 Calcular total actualizado
+            calcularTotalCobro();
         }
     });
-
     // Enviar nota de entrada
     const form = document.getElementById('form-nota-entrada');
     if (form) {

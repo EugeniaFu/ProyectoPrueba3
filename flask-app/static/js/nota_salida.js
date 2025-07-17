@@ -1,9 +1,14 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Variable global para guardar el rentaId actual
+    window.rentaIdNotaSalidaActual = null;
+
     // Abrir modal y cargar datos
     document.body.addEventListener('click', function (e) {
         const btn = e.target.closest('.btn-nota-salida');
         if (btn) {
             const rentaId = btn.dataset.rentaId;
+            window.rentaIdNotaSalidaActual = rentaId; // Guardamos el rentaId en variable global
+
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNotaSalida'));
             modal.show();
 
@@ -23,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.getElementById('nota-salida-piezas').innerHTML = `<tr><td colspan="2" class="text-danger">${data.error}</td></tr>`;
                         return;
                     }
+
                     document.getElementById('nota-salida-folio').textContent = data.folio;
                     document.getElementById('nota-salida-fecha').textContent = data.fecha;
                     document.getElementById('nota-salida-cliente').textContent = data.cliente;
@@ -35,29 +41,29 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (data.piezas && data.piezas.length > 0) {
                         data.piezas.forEach(pieza => {
                             piezasHtml += `
-            <tr>
-                <td>${pieza.nombre_pieza}</td>
-                <td>
-                    <input type="number"
-                        class="form-control form-control-sm pieza-cantidad"
-                        min="0"
-                        max="${pieza.cantidad}"
-                        value="${pieza.cantidad}"
-                        data-id-pieza="${pieza.id_pieza}">
-                </td>
-            </tr>
-        `;
+                                <tr>
+                                    <td>${pieza.nombre_pieza}</td>
+                                    <td>
+                                        <input type="number"
+                                            class="form-control form-control-sm pieza-cantidad"
+                                            min="0"
+                                            max="${pieza.cantidad}"
+                                            value="${pieza.cantidad}"
+                                            data-id-pieza="${pieza.id_pieza}">
+                                    </td>
+                                </tr>`;
                         });
                     } else {
                         piezasHtml = '<tr><td colspan="2" class="text-center text-muted">Sin piezas asociadas</td></tr>';
                     }
+
                     document.getElementById('nota-salida-piezas').innerHTML = piezasHtml;
 
+                    // Guardamos también el array de piezas en una variable global si se desea
                     window.piezasNotaSalida = data.piezas.map(p => ({
-                        id_pieza: p.id_pieza, // Debe venir en el JSON del endpoint preview
+                        id_pieza: p.id_pieza,
                         cantidad: p.cantidad
                     }));
-
                 })
                 .catch(err => {
                     document.getElementById('nota-salida-piezas').innerHTML = '<tr><td colspan="2" class="text-danger">Error al cargar la nota de salida.</td></tr>';
@@ -76,13 +82,15 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando...';
 
-            // Obtén el rentaId del último modal abierto
-            const rentaId = document.querySelector('.btn-nota-salida.active')?.dataset.rentaId ||
-                document.querySelector('.btn-nota-salida[data-renta-id]')?.dataset.rentaId;
+            const rentaId = window.rentaIdNotaSalidaActual; // Usamos la variable global confiable
 
-            // Si no tienes forma de saber el rentaId así, guárdalo en una variable global al abrir el modal
+            if (!rentaId) {
+                Swal.fire('Error', 'No se pudo determinar la renta asociada.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-arrow-right-circle"></i> Generar Nota de Salida';
+                return;
+            }
 
-            // Obtén piezas del modal
             const piezas = [];
             document.querySelectorAll('.pieza-cantidad').forEach(input => {
                 const id_pieza = input.dataset.idPieza;
@@ -92,15 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // Pero lo ideal es que al cargar el modal, guardes el array de piezas (con id_pieza y cantidad) en una variable global.
-            // Aquí un ejemplo usando una variable global:
-            // window.piezasNotaSalida = [{id_pieza: 1, cantidad: 5}, ...];
-
-            // Recoge los datos del formulario
             const numero_referencia = document.getElementById('nota-salida-referencia').value;
             const observaciones = document.getElementById('nota-salida-observaciones').value;
 
-            // Usa la variable global window.piezasNotaSalida si la llenaste al cargar el modal
             const payload = {
                 numero_referencia,
                 observaciones,
@@ -113,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
                 const json = await res.json();
                 if (json.success) {
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalNotaSalida'));
@@ -142,8 +145,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.innerHTML = '<i class="bi bi-arrow-right-circle"></i> Generar Nota de Salida';
             }
         });
-
     }
 
-
+    // Limpiar rentaId cuando se cierre el modal
+    document.getElementById('modalNotaSalida').addEventListener('hidden.bs.modal', () => {
+        window.rentaIdNotaSalidaActual = null;
+    });
 });

@@ -293,16 +293,61 @@ def crear_renta():
 @rentas_bp.route('/actualizar_fecha_entrada/<int:renta_id>', methods=['POST'])
 def actualizar_fecha_entrada(renta_id):
     try:
-        nueva_fecha = request.json.get('fecha_entrada')
-        if not nueva_fecha:
+        nueva_fecha_str = request.json.get('fecha_entrada')
+        if not nueva_fecha_str:
             return jsonify({'success': False, 'error': 'Fecha de entrada no proporcionada'}), 400
+
+        # Parsear fecha_entrada enviada (asumiendo formato ISO YYYY-MM-DD)
+        nueva_fecha = datetime.strptime(nueva_fecha_str, '%Y-%m-%d').date()
 
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # Obtener fecha_salida actual para calcular días
+        cursor.execute("SELECT fecha_salida, costo_traslado FROM rentas WHERE id = %s", (renta_id,))
+        fila = cursor.fetchone()
+        if not fila:
+            return jsonify({'success': False, 'error': 'Renta no encontrada'}), 404
+
+        fecha_salida = fila[0]
+        costo_traslado = float(fila[1] or 0)
+
+        if not fecha_salida:
+            return jsonify({'success': False, 'error': 'Fecha de salida no definida'}), 400
+
+        # Calcular días de renta
+        dias_renta = (nueva_fecha - fecha_salida).days + 1
+        if dias_renta < 1:
+            dias_renta = 1
+
+        # Actualizar fecha_entrada en rentas
         cursor.execute("UPDATE rentas SET fecha_entrada = %s WHERE id = %s", (nueva_fecha, renta_id))
+
+        # Obtener detalles para actualizar días y subtotal
+        cursor.execute("SELECT id, cantidad, costo_unitario FROM renta_detalle WHERE renta_id = %s", (renta_id,))
+        detalles = cursor.fetchall()
+
+        total = 0
+        for detalle in detalles:
+            detalle_id, cantidad, costo_unitario = detalle
+            subtotal = cantidad * dias_renta * float(costo_unitario)
+            cursor.execute("""
+                UPDATE renta_detalle SET dias_renta = %s, subtotal = %s WHERE id = %s
+            """, (dias_renta, subtotal, detalle_id))
+            total += subtotal
+
+        total += costo_traslado
+        iva = total * 0.16
+        total_con_iva = total + iva
+
+        # Actualizar totales en rentas
+        cursor.execute("""
+            UPDATE rentas SET total = %s, iva = %s, total_con_iva = %s WHERE id = %s
+        """, (total, iva, total_con_iva, renta_id))
+
         conn.commit()
 
-        return jsonify({'success': True, 'message': 'Fecha de entrada actualizada correctamente'})
+        return jsonify({'success': True, 'message': 'Fecha de entrada y totales actualizados correctamente'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:

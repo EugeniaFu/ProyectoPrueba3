@@ -29,7 +29,8 @@ def obtener_prefactura(renta_id):
     detalle = cursor.fetchall()
     # Totales y traslado
     cursor.execute("""
-        SELECT total_con_iva, traslado, costo_traslado
+        SELECT total_con_iva, traslado, costo_traslado, fecha_entrada
+
         FROM rentas
         WHERE id = %s
     """, (renta_id,))
