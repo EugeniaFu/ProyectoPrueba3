@@ -180,92 +180,40 @@
                                 {% endif %}
                             </div>
                         </td>
+
+
                         <!-- Columna de acciones -->
                         <td>
                             <div class="d-flex actions justify-content-center gap-1">
 
-                                <!-- Botón de Acciones -->
-                                <div class="dropdown dropup">
-                                    <button
-                                        class="btn btn-sm btn-primary dropdown-toggle no-caret rounded rounded-circle"
-                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                        data-bs-toggle="tooltip" title="Opciones de la cotización">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#"><i
-                                                    class="bi bi-pencil me-2"></i>Editar</a></li>
-                                        <li><a class="dropdown-item" href="#"><i
-                                                    class="bi bi-files me-2"></i>Duplicar</a></li>
-                                        <li><a class="dropdown-item" href="#"><i class="bi bi-send me-2"></i>Enviar al
-                                                cliente</a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item btn-ver-detalle" href="#"
-                                                data-cotizacion-id="{{ cotizacion.id }}">
-                                                <i class="bi bi-eye me-2"></i>Ver Detalles
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                <!-- Botón Ver Detalles -->
+                                <button class="btn btn-sm btn-primary rounded rounded-circle btn-ver-detalle"
+                                    type="button" data-cotizacion-id="{{ cotizacion.id }}" data-bs-toggle="tooltip"
+                                    title="Ver detalles">
+                                    <i class="bi bi-eye"></i>
+                                </button>
 
-                                <!-- Botón de PDF -->
-                                <div class="dropdown dropup">
-                                    <button
-                                        class="btn btn-sm btn-success dropdown-toggle no-caret rounded rounded-circle"
-                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                        data-bs-toggle="tooltip" title="Descargar PDF">
-                                        <i class="bi bi-printer"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            <a class="dropdown-item" href="/cotizaciones/pdf/{{ cotizacion.id }}"
-                                                target="_blank">
-                                                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Descargar PDF
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="/cotizaciones/email/{{ cotizacion.id }}">
-                                                <i class="bi bi-envelope me-2 text-primary"></i>Enviar por email
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                <!-- Botón PDF -->
+                                <a href="/cotizaciones/pdf/{{ cotizacion.id }}" target="_blank"
+                                    class="btn btn-sm btn-success rounded rounded-circle" data-bs-toggle="tooltip"
+                                    title="Descargar PDF">
+                                    <i class="bi bi-file-earmark-pdf"></i>
+                                </a>
 
-                                <!-- Botón de Estado -->
-                                <div class="dropdown dropup">
-                                    <button
-                                        class="btn btn-sm btn-warning text-dark dropdown-toggle no-caret rounded rounded-circle"
-                                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                        data-bs-toggle="tooltip" title="Cambiar estado">
-                                        <i class="bi bi-arrow-repeat"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#"
-                                                onclick="cambiarEstado({{ cotizacion.id }}, 'enviada')">
-                                                <i class="bi bi-send me-2 text-primary"></i> Marcar como enviada </a>
-                                        </li>
-                                        <li><a class="dropdown-item" href="#"
-                                                onclick="cambiarEstado({{ cotizacion.id }}, 'vencida')">
-                                                <i class="bi bi-clock-history me-2 text-danger"></i>Marcar como
-                                                vencida</a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        <li><a class="dropdown-item" href="#"
-                                                onclick="convertirARenta({{ cotizacion.id }})">
-                                                <i class="bi bi-arrow-right me-2 text-success"></i>Convertir a renta</a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                <!-- Botón Convertir a Renta -->
+                                <button class="btn btn-sm btn-success rounded rounded-circle" type="button"
+                                    onclick="convertirARenta({{ cotizacion.id }})" data-bs-toggle="tooltip"
+                                    title="Convertir a renta">
+                                    <i class="bi bi-arrow-right"></i>
+                                </button>
 
-                                <!-- Botón de Eliminar -->
-                                <button class="btn btn-sm btn-danger text-white no-caret rounded rounded-circle"
-                                    type="button" data-bs-toggle="tooltip" title="Eliminar cotización">
+                                <!-- Botón Eliminar -->
+                                <button class="btn btn-sm btn-danger rounded rounded-circle" type="button"
+                                    onclick="eliminarCotizacion({{ cotizacion.id }})" data-bs-toggle="tooltip"
+                                    title="Eliminar cotización">
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
+
                             </div>
                         </td>
                     </tr>
