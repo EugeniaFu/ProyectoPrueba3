@@ -41,6 +41,23 @@
                     <strong>¡Entrega con retraso!</strong> Se aplicará un cobro adicional por el retraso.
                 </div>
 
+                <!-- Detalle de productos en retraso -->
+                <div id="detalle-retraso" class="mb-3" style="display: none;">
+                    <strong>Detalle del cobro por retraso:</strong>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Días de retraso</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalle-retraso-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Cobros adicionales -->
                 <div class="row mb-3">
                     <div class="col-md-6">
@@ -97,24 +114,82 @@
 
 <!-- Modal de Costo Extra -->
 <div class="modal fade" id="modalCostoExtra" tabindex="-1" aria-labelledby="modalCostoExtraLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <form id="form-costo-extra" class="modal-content">
-      <div class="modal-header">
+    <div class="modal-header">
         <h5 class="modal-title" id="modalCostoExtraLabel">Generar Nota de Costo Extra</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-      <div class="modal-body">
-        <p><strong>Cliente:</strong> <span id="cliente-costo-extra">---</span></p>
-        <p><strong>Motivo:</strong> <span id="motivo-costo-extra">---</span></p>
-        <p><strong>Monto:</strong> $<span id="monto-costo-extra">0.00</span></p>
-        <input type="hidden" id="input-monto-extra" />
-        <input type="hidden" id="input-motivo-extra" />
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-warning">
-          <i class="bi bi-check-circle"></i> Confirmar y Generar
+    </div>
+    <div class="modal-body">
+        <div class="container">
+            <p><strong>Cliente:</strong> <span id="cliente-costo-extra">---</span></p>
+            <p><strong>Monto:</strong> $<span id="monto-costo-extra">0.00</span></p>
+            <input type="hidden" id="input-monto-extra" />
+            <input type="hidden" id="input-motivo-extra" />
+        </div>
+    </div>
+
+    <div class="container">
+        <div>
+        <strong>Motivos:</strong>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mt-2" id="tabla-motivos-extra">
+            <thead class="table-light">
+                <tr>
+                <th>#</th>
+                <th>Producto/Motivo</th>
+                <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Se llenará dinámicamente con JS -->
+            </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="container">
+        <h6>Detalle de Prefactura:</h6>
+        <div class="table-responsive">
+        <table class="table table-bordered table-sm" id="tabla-prefactura">
+            <thead class="table-light">
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Días Renta</th>
+                <th>Costo Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- Se llena dinámicamente -->
+            </tbody>
+            <tfoot>
+            <tr>
+                <th colspan="4" class="text-end">Total c/IVA:</th>
+                <td id="total-con-iva">$0.00</td>
+            </tr>
+            <tr>
+                <th colspan="4" class="text-end">Traslado:</th>
+                <td id="traslado-prefactura">---</td>
+            </tr>
+            <tr>
+                <th colspan="4" class="text-end">Costo Traslado:</th>
+                <td id="costo-traslado-prefactura">$0.00</td>
+            </tr>
+            </tfoot>
+        </table>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-success">
+        <i class="bi bi-check-circle"></i> Confirmar y Generar
         </button>
-      </div>
+    </div>
     </form>
   </div>
 </div>
@@ -152,10 +227,65 @@ document.getElementById('btn-generar-costo-extra').addEventListener('click', () 
 
     document.getElementById('cliente-costo-extra').textContent = cliente;
     document.getElementById('monto-costo-extra').textContent = montoTotal.toFixed(2);
-    document.getElementById('motivo-costo-extra').textContent = motivo;
+
+    const tablaMotivos = document.querySelector('#tabla-motivos-extra tbody');
+            tablaMotivos.innerHTML = '';
+            motivoFinal.forEach((motivoStr, index) => {
+                let producto = 'General';
+                let descripcion = motivoStr;
+
+                // Buscar si contiene palabras clave
+                const palabrasClave = ['dañada', 'faltante'];
+                const encontrado = palabrasClave.find(palabra => motivoStr.toLowerCase().includes(palabra));
+
+                if (encontrado) {
+                    const partes = motivoStr.split(new RegExp(`\\s${encontrado}`, 'i'));
+                    producto = partes[0].trim();
+                    descripcion = encontrado + (partes[1] ? partes[1] : '');
+                } else if (motivoStr.toLowerCase() === 'retraso') {
+                    descripcion = 'Retraso en la entrega';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${producto}</td>
+                    <td>${descripcion}</td>
+                `;
+                tablaMotivos.appendChild(row);
+            });
+
 
     document.getElementById('input-monto-extra').value = montoTotal;
     document.getElementById('input-motivo-extra').value = motivo;
+
+    // Obtener datos de prefactura y renderizar tabla
+    fetch(`/notas_entrada/${window.datosNotaEntrada.rentaId}`)
+    .then(response => response.json())
+    .then(data => {
+        const tbody = document.querySelector('#tabla-prefactura tbody');
+        tbody.innerHTML = '';
+
+        data.detalle.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.nombre}</td>
+            <td>${item.cantidad}</td>
+            <td>${item.dias_renta}</td>
+            <td>$${parseFloat(item.costo_unitario).toFixed(2)}</td>
+            <td>$${parseFloat(item.subtotal).toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+        });
+
+        document.getElementById('total-con-iva').textContent = `$${parseFloat(data.total_con_iva).toFixed(2)}`;
+        document.getElementById('traslado-prefactura').textContent = data.traslado || '---';
+        document.getElementById('costo-traslado-prefactura').textContent = `$${parseFloat(data.costo_traslado).toFixed(2)}`;
+    })
+    .catch(error => {
+        console.error('Error al obtener la prefactura:', error);
+    });
+
 });
 
 document.getElementById('form-costo-extra').addEventListener('submit', async function (e) {

@@ -359,6 +359,35 @@ def crear_nota_costo_extra(renta_id):
         cursor.close()
         conn.close()
 
+@notas_entrada_bp.route('/<int:renta_id>')
+def obtener_datos_prefactura(renta_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    # Detalle de productos
+    cursor.execute("""
+        SELECT p.nombre, d.cantidad, d.dias_renta, d.costo_unitario, d.subtotal
+        FROM renta_detalle d
+        JOIN productos p ON d.id_producto = p.id_producto
+        WHERE d.renta_id = %s
+    """, (renta_id,))
+    detalle = cursor.fetchall()
+    # Totales y traslado
+    cursor.execute("""
+        SELECT total_con_iva, traslado, costo_traslado, fecha_entrada
+
+        FROM rentas
+        WHERE id = %s
+    """, (renta_id,))
+    total_info = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return jsonify({
+        "detalle": detalle,
+        "total_con_iva": total_info['total_con_iva'] if total_info else 0,
+        "traslado": total_info['traslado'] if total_info else None,
+        "costo_traslado": total_info['costo_traslado'] if total_info else 0
+    })
+
 @notas_entrada_bp.route('/pdf_renta/<int:renta_id>')
 def generar_pdf_nota_entrada_por_renta(renta_id):
     conn = get_db_connection()
