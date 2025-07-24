@@ -74,11 +74,13 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Kit/Producto</th>
             <th>Fecha de registro</th>
+            <th>Nombre del cliente</th>
+            <th>Kit/Producto</th>
+
             <th>Fecha de salida</th>
             <th>Fecha de entrada</th>
-            <th>Nombre del cliente</th>
+
             <th>Dirección de la obra</th>
             <th>Estado de la renta</th>
             <th>Estado de pago</th>
@@ -87,12 +89,24 @@
             <th>Acciones</th>
           </tr>
         </thead>
+
+
         <tbody>
           {% for renta in rentas %}
           <tr>
+
+            <!-- COLUMNA DE ID -->
             <td><strong>#{{ renta[0] }}</strong></td>
 
-            <!-- Columna de productos mejorada con tooltip -->
+
+            <!-- COLUMNA DE FECHA DE REGISTRO -->
+            <td><small>{{ renta[1].strftime('%d/%m/%Y %H:%M') }}</small></td>
+
+            <!-- COLUMNA DE NOMBRE DEL CLIENTE -->
+            <td><strong>{{ renta[12] }} {{ renta[13] }}</strong></td>
+
+
+            <!-- COLUMNA DE PRODUCTOS -->
             <td>
               <div class="productos-lista">
                 {% if productos_por_renta.get(renta[0]) %}
@@ -115,7 +129,8 @@
               </div>
             </td>
 
-            <td><small>{{ renta[1].strftime('%d/%m/%Y %H:%M') }}</small></td>
+
+            <!-- COLUMNA DE FECHA DE SALIDA -->
             <td>
               {% if renta[2] %}
               {{ renta[2].strftime('%d/%m/%Y') }}
@@ -124,6 +139,8 @@
               {% endif %}
             </td>
 
+
+            <!-- COLUMNA DE FECHA DE ENTRADA -->
             <td>
               {% if renta[3] %}
               <div class="d-flex flex-column">
@@ -148,9 +165,8 @@
               {% endif %}
             </td>
 
-            <td><strong>{{ renta[12] }} {{ renta[13] }}</strong></td>
 
-            <!-- Columna de dirección mejorada con tooltip -->
+            <!-- COLUMNA DIRECCIÓN DE OBRA -->
             <td>
               {% if renta[11] and renta[11]|length > 25 %}
               <span class="tooltip-direccion" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ renta[11] }}">
@@ -161,6 +177,8 @@
               {% endif %}
             </td>
 
+
+            <!-- COLUMNA ESTADO DE LA RENTA -->
             <td>
               <span class="badge bg-{{ 
     'success' if renta[4] == 'activo' 
@@ -172,6 +190,8 @@
               </span>
             </td>
 
+
+            <!-- COLUMNA ESTADO DE PAGO -->
             <td>
               <span
                 class="badge {% if renta[5] == 'pago realizado' %}bg-success-custom{% else %}bg-{{ 'danger' if renta[5] == 'Pago pendiente' else 'warning' }}{% endif %}">
@@ -179,10 +199,12 @@
               </span>
             </td>
 
+
+            <!-- COLUMNA MÉTODO DE PAGO -->
             <td><small>{{ renta[6] or 'N/A' }}</small></td>
             <td><strong>${{ '%.2f'|format(renta[7]) }}</strong></td>
 
-            <!-- Columna de acciones con tooltips mejorados -->
+            <!-- COLUMNA DE ACCIONES -->
             <td>
               <div class="d-flex actions justify-content-center gap-1">
 
@@ -232,7 +254,8 @@
                       </a>
                     </li>
                     <li>
-                      <a class="dropdown-item" href="/notas_entrada/pdf_costo_extra_renta/{{ renta[0] }}" target="_blank">
+                      <a class="dropdown-item" href="/notas_entrada/pdf_costo_extra_renta/{{ renta[0] }}"
+                        target="_blank">
                         <i class="bi bi-file-earmark-pdf me-2 text-dark"></i>Nota de costo extra
                       </a>
                     </li>
@@ -262,11 +285,9 @@
                     </li>
                     <li>
                       <a class="dropdown-item btn-prefactura {% if renta[5]|lower == 'pago realizado' %}disabled{% endif %}"
-                        href="#"
-                        data-renta-id="{{ renta[0] }}"
-                        data-fecha-salida="{{ renta[2] }}"
-                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}"
-                        {% if renta[5]|lower == 'pago realizado' %}tabindex="-1" aria-disabled="true"{% endif %}>
+                        href="#" data-renta-id="{{ renta[0] }}" data-fecha-salida="{{ renta[2] }}"
+                        data-fecha-entrada="{{ renta[3].strftime('%Y-%m-%d') if renta[3] else '' }}" {% if
+                        renta[5]|lower=='pago realizado' %}tabindex="-1" aria-disabled="true" {% endif %}>
                         <i class="bi bi-journal-check me-2 text-success"></i>Generar Prefactura
                       </a>
                     </li>
@@ -321,7 +342,7 @@
 {% block scripts %}
 <script>
   window.preciosProductos = {{ precios_productos | tojson }};
-</script> 
+</script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {

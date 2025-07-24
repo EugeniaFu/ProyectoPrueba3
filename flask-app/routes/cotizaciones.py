@@ -290,7 +290,7 @@ def generar_pdf_cotizacion_buffer(cotizacion_id):
     # === SALUDO PERSONALIZADO ===
     can.setFont("Carlito", 10)
     if cotizacion['cliente_empresa'] and cotizacion['cliente_empresa'].strip():
-        saludo = f"ESTIMADA EMPRESA {cotizacion['cliente_empresa']}, A CONTINUACIÓN SE LE PRESENTA  LA COTIZACIÓN SOLICITADA:"
+        saludo = f"ESTIMADA EMPRESA {cotizacion['cliente_empresa'].upper()}, A CONTINUACIÓN SE LE PRESENTA  LA COTIZACIÓN SOLICITADA:"
     else:
         saludo = f"ESTIMADO/A {cotizacion['cliente_nombre'].upper()}, A CONTINUACIÓN SE LE PRESENTA  LA COTIZACIÓN SOLICITADA:"
     
@@ -380,7 +380,7 @@ def generar_pdf_cotizacion_buffer(cotizacion_id):
 
 
 
-    # Traslado si existe
+    
     # Traslado si existe
     if cotizacion['requiere_traslado'] and cotizacion['costo_traslado'] > 0:
         can.setFont("Carlito", 9)

@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         cambio.textContent = '0.00';
                         numSeguimiento.value = '';
 
-                        if (metodo === 'efectivo') {
+                        if (metodo === 'EFECTIVO') {
                             efectivo.style.display = '';
                             seguimiento.style.display = 'none';
 
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const validarPagoNoEfectivo = () => {
                         const numSeg = numSeguimiento.value.trim();
 
-                        if (metodoPago.value !== 'efectivo' && metodoPago.value !== '') {
+                        if (metodoPago.value !== 'EFECTIVO' && metodoPago.value !== '') {
                             // Mostrar el monto exacto en la interfaz
                             const totalPagar = parseFloat(document.getElementById('pago-total-pago').textContent) || 0;
                             document.getElementById('monto-exacto-display').textContent = totalPagar.toFixed(2);
@@ -195,11 +195,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Validación del campo facturable
                     facturable.onchange = () => {
-                        if (metodoPago.value === 'efectivo') {
+                        if (metodoPago.value === 'EFECTIVO') {
                             const recibido = parseFloat(montoRecibido.value) || 0;
                             const totalPagar = parseFloat(document.getElementById('pago-total-pago').textContent) || 0;
                             btnGenerar.style.display = (recibido >= totalPagar && validarFormulario()) ? '' : 'none';
-                        } else if (metodoPago.value !== '' && metodoPago.value !== 'efectivo') {
+                        } else if (metodoPago.value !== '' && metodoPago.value !== 'EFECTIVO') {
                             validarPagoNoEfectivo();
                         }
                     };
@@ -290,8 +290,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 metodo_pago: metodo,
                 monto: monto,
                 monto_recibido: montoRecibido,
-                cambio: cambio,
-                numero_seguimiento: seguimiento,
+                cambio: cambio || 0,
+                numero_seguimiento: seguimiento || '',
                 facturable: facturable === '1'
             };
 
