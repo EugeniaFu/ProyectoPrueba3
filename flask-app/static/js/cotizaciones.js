@@ -475,33 +475,100 @@ function cambiarEstado(cotizacionId, nuevoEstado) {
         });
 }
 
+// ===============================================
 // Función para convertir cotización a renta
+// ===============================================
+
+// Función para convertir cotización a renta (VERSIÓN SIMPLE)
 function convertirARenta(cotizacionId) {
-    if (confirm('¿Está seguro de que desea convertir esta cotización a renta?')) {
-        fetch(`/cotizaciones/${cotizacionId}/convertir-renta`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                estado: 'renta',
-                comentarios: 'Cotización convertida a renta'
+    Swal.fire({
+        title: '¿Convertir a renta?',
+        text: 'Esta acción marcará la cotización como convertida a renta para fines estadísticos.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, convertir',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/cotizaciones/${cotizacionId}/convertir-renta`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    estado: 'renta',
+                    comentarios: 'Cotización convertida a renta'
+                })
             })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Cotización convertida a renta exitosamente');
-                    location.reload();
-                } else {
-                    alert('Error al convertir a renta: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al convertir a renta');
-            });
-    }
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(
+                            'Convertida',
+                            'La cotización ha sido marcada como renta exitosamente.',
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', data.error || 'Error al convertir a renta', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'Hubo un error al convertir a renta', 'error');
+                });
+        }
+    });
 }
 
 
+
+
+// ===============================================
+//  FUNCIÓN ELIMINAR COTIZACIONES
+// ===============================================
+
+
+// Función para eliminar cotización
+function eliminarCotizacion(cotizacionId) {
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Esta acción eliminará permanentemente la cotización y no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/cotizaciones/${cotizacionId}/eliminar`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(
+                            'Eliminada',
+                            'La cotización ha sido eliminada exitosamente.',
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', data.error || 'Error al eliminar la cotización', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'Hubo un error al eliminar la cotización', 'error');
+                });
+        }
+    });
+}

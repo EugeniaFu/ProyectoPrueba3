@@ -47,10 +47,6 @@ def obtener_prefactura(renta_id):
 
 
 
-
-
-
-
 # === Endpoint: Registrar pago 
 @prefactura_bp.route('/pago/<int:renta_id>', methods=['POST'])
 def registrar_pago_prefactura(renta_id):
@@ -63,35 +59,63 @@ def registrar_pago_prefactura(renta_id):
     facturable = data.get('facturable', False)
     numero_seguimiento = data.get('numero_seguimiento')
 
-    # DEBUG: Verificar qué valor tiene facturable
-    print(f"DEBUG: facturable recibido = {facturable}, tipo = {type(facturable)}")
+    # DEBUG: Imprimir todos los datos recibidos
+    print(f"=== DEBUG PREFACTURA ===")
+    print(f"metodo_pago: '{metodo}' (tipo: {type(metodo)})")
+    print(f"monto: {monto}")
+    print(f"monto_recibido: {monto_recibido}")
+    print(f"cambio: {cambio}")
+    print(f"numero_seguimiento: '{numero_seguimiento}'")
+    print(f"facturable: {facturable}")
+    
+    # Validar método de pago
+    if not metodo or metodo.strip() == '':
+        print("ERROR: Método de pago vacío o None")
+        return jsonify({'success': False, 'error': 'Método de pago requerido'}), 400
     
     # Convertir explícitamente a entero para la BD
     facturable_int = 1 if facturable else 0
-    print(f"DEBUG: facturable_int = {facturable_int}")
+    
+    # Asegurar que cambio no sea None para métodos no efectivo
+    if metodo.upper() != 'EFECTIVO':
+        cambio = 0.0
+        # Asegurar que numero_seguimiento no sea None
+        if not numero_seguimiento:
+            numero_seguimiento = ''
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Insertar prefactura con fecha_emision (NOW() toma la fecha/hora local del sistema)
+        # Insertar prefactura - AGREGAR DEBUG AQUÍ TAMBIÉN
+        print(f"Insertando en BD: metodo='{metodo.upper()}', numero_seguimiento='{numero_seguimiento}'")
+        
         cursor.execute("""
             INSERT INTO prefacturas (
             renta_id, fecha_emision, tipo, pagada, metodo_pago, monto, 
             monto_recibido, cambio, numero_seguimiento, generada, facturable
         ) VALUES (%s, NOW() - INTERVAL 6 HOUR, %s, 1, %s, %s, %s, %s, %s, 1, %s)
-""", (
-    renta_id, tipo, metodo.upper(), monto, monto_recibido, cambio, 
-    numero_seguimiento, facturable_int  
-))
+        """, (
+            renta_id, tipo, metodo.upper(), monto, monto_recibido, cambio, 
+            numero_seguimiento, facturable_int  
+        ))
+        
         prefactura_id = cursor.lastrowid
+        print(f"Prefactura creada con ID: {prefactura_id}")
 
-        # Actualizar renta
+        # Actualizar renta - AGREGAR DEBUG
+        print(f"Actualizando renta {renta_id} con metodo_pago: '{metodo.upper()}'")
         cursor.execute("""
             UPDATE rentas SET estado_pago='Pago realizado', metodo_pago=%s WHERE id=%s
         """, (metodo.upper(), renta_id))
         
         conn.commit()
+        
+        # VERIFICAR QUE SE GUARDÓ CORRECTAMENTE
+        cursor.execute("SELECT metodo_pago, numero_seguimiento FROM prefacturas WHERE id = %s", (prefactura_id,))
+        verificacion = cursor.fetchone()
+        print(f"Verificación - datos guardados en BD: {verificacion}")
+        
         cursor.close()
         conn.close()
 
@@ -99,6 +123,14 @@ def registrar_pago_prefactura(renta_id):
     except Exception as e:
         print(f"Error al registrar prefactura: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+
+
+
+
 
 
 

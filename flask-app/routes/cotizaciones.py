@@ -204,7 +204,8 @@ def generar_pdf_cotizacion_buffer(cotizacion_id):
     # Obtener datos de la cotización
     cursor.execute("""
         SELECT c.*, u.nombre as usuario_nombre, u.apellido1 as usuario_apellido,
-               s.nombre as sucursal_nombre, s.direccion as sucursal_direccion
+               s.nombre as sucursal_nombre, s.direccion as sucursal_direccion,
+               (c.fecha_creacion - INTERVAL 6 HOUR) as fecha_creacion_local
         FROM cotizaciones c
         JOIN usuarios u ON c.usuario_id = u.id
         JOIN sucursales s ON c.sucursal_id = s.id
@@ -243,173 +244,292 @@ def generar_pdf_cotizacion_buffer(cotizacion_id):
     
     # === INFORMACIÓN DE LA EMPRESA (PARTE SUPERIOR) ===
     can.setFont("Helvetica-Bold", 12)
-    can.drawString(50, 750, "COTIZACIÓN DE RENTA DE ANDAMIOS Y EQUIPO LIGERO")
+    can.drawString(25, 708, "COTIZACIÓN DE RENTA DE ANDAMIOS Y EQUIPO LIGERO")
     
-    can.setFont("Carlito", 10)
-    can.drawString(50, 735, f"Empresa: {cotizacion.get('sucursal_nombre', 'Tu Empresa')}")
-    can.drawString(50, 720, f"Dirección: {cotizacion.get('sucursal_direccion', 'No disponible')}")
-    can.drawString(50, 705, f"A {cotizacion.get('usuario_nombre', '')} {cotizacion.get('usuario_apellido', '')}")
     
     # Fecha y folio (lado derecho)
     # Una sola línea con formato completo
-    can.drawString(482, 708, f"{cotizacion['fecha_creacion'].strftime('%d/%m/%Y - %H:%M:%S')}")
-    can.setFont("Helvetica-Bold", 10)
-    can.drawString(455, 665, f"COTIZACIÓN # {cotizacion['numero_cotizacion']}")
     can.setFont("Carlito", 10)
-    can.drawString(455, 650, f"VIGENCIA: {cotizacion['fecha_vigencia'].strftime('%d/%m/%Y')}")
+    can.drawString(482, 708, f"{cotizacion['fecha_creacion_local'].strftime('%d/%m/%Y - %H:%M:%S')}")
     
-    # Línea separadora
-    can.line(50, 600, 550, 600)
+    can.setFont("Helvetica-Bold", 10)
+    can.drawString(455, 680, f"COTIZACIÓN # {cotizacion['numero_cotizacion']}")
+    
+    can.setFont("Carlito", 10)
+    can.drawString(455, 670, f"VIGENCIA: {cotizacion['fecha_vigencia'].strftime('%d/%m/%Y')}")
+    
     
     # === DATOS DEL CLIENTE (TODOS DE LA TABLA COTIZACIONES) ===
-    y = 600
+    y = 675
     can.setFont("Helvetica-Bold", 11)
-    can.drawString(50, y, "DATOS DEL CLIENTE")
+    can.drawString(25, y-5, "DATOS DEL CLIENTE")
     y -= 20
+
+    # Línea separadora
+    can.line(25, 668, 580, 668)
     
-    can.setFont("Helvetica", 10)
-    
+    can.setFont("Carlito", 10)
     # Determinar destinatario (empresa o cliente)
     if cotizacion['cliente_empresa'] and cotizacion['cliente_empresa'].strip():
-        destinatario = cotizacion['cliente_empresa']
-        can.drawString(50, y, f"Empresa: {destinatario}")
+        destinatario = cotizacion['cliente_empresa'].upper()
+        can.drawString(25, y, f"EMPRESA: {destinatario}")
         y -= 15
-        can.drawString(50, y, f"Contacto: {cotizacion['cliente_nombre']}")
+        can.drawString(25, y, f"CONTACTO: {cotizacion['cliente_nombre']}")
     else:
-        destinatario = cotizacion['cliente_nombre']
-        can.drawString(50, y, f"Cliente: {destinatario}")
+        destinatario = cotizacion['cliente_nombre'].upper()
+        can.drawString(25, y, f"CLIENTE: {destinatario}")
     
     y -= 15
-    can.drawString(50, y, f"Teléfono: {cotizacion['cliente_telefono']}")
+    can.drawString(25, y, f"TELÉFONO: {cotizacion['cliente_telefono']}")
     y -= 15
-    can.drawString(50, y, f"Email: {cotizacion['cliente_email'] or 'No proporcionado'}")
+    can.drawString(25, y, f"EMAIL: {cotizacion['cliente_email'] or 'No proporcionado'.upper()}")
     y -= 15
-    can.drawString(50, y, f"Días de renta: {cotizacion['dias_renta']}")
+    can.drawString(25, y, f"DIAS DE RENTA: {cotizacion['dias_renta']}")
     
-    y -= 30
-    
+    y -= 20
     # === SALUDO PERSONALIZADO ===
-    can.setFont("Helvetica", 10)
+    can.setFont("Carlito", 10)
     if cotizacion['cliente_empresa'] and cotizacion['cliente_empresa'].strip():
-        saludo = f"Estimada empresa {cotizacion['cliente_empresa']}, se le presenta a continuación la siguiente cotización solicitada:"
+        saludo = f"ESTIMADA EMPRESA {cotizacion['cliente_empresa'].upper()}, A CONTINUACIÓN SE LE PRESENTA  LA COTIZACIÓN SOLICITADA:"
     else:
-        saludo = f"Estimado {cotizacion['cliente_nombre']}, se le presenta a continuación la siguiente cotización solicitada:"
+        saludo = f"ESTIMADO/A {cotizacion['cliente_nombre'].upper()}, A CONTINUACIÓN SE LE PRESENTA  LA COTIZACIÓN SOLICITADA:"
     
-    can.drawString(50, y, saludo)
-    y -= 30
+    can.drawString(25, y, saludo)
     
+    can.line(25, y-5, 580, y-5)  # Línea separadora
+    y -= 15
     # === TABLA DE PRODUCTOS ===
     can.setFont("Helvetica-Bold", 9)
     can.drawString(50, y, "PRODUCTO")
-    can.drawString(250, y, "CANT.")
-    can.drawString(300, y, "DÍAS")
-    can.drawString(350, y, "PRECIO UNIT.")
-    can.drawString(450, y, "SUBTOTAL")
+    can.drawString(330, y, "CANT.")
+    can.drawString(380, y, "DÍAS")
+    can.drawString(420, y, "PRECIO UNIT.")
+    can.drawString(500, y, "SUBTOTAL")
     
+    y -= 3
+    can.line(25, y, 580, y)  # Línea separadora
     y -= 15
-    can.line(50, y, 550, y)  # Línea separadora
-    y -= 10
     
-    can.setFont("Helvetica", 8)
+    can.setFont("Carlito", 8)
     subtotal_productos = 0
     
+    
+
     for producto in productos:
-        # Nombre del producto
-        can.drawString(50, y, producto['nombre'][:30])
-        y -= 12
+
+    # Guardar posición Y inicial para los datos numéricos
+        y_inicial_producto = y
         
-        # Descripción del producto (SIEMPRE se muestra)
+        # Nombre del producto
+        can.setFont("Carlito", 8)
+        can.drawString(25, y, producto['nombre'][:30].upper())
+        y -= 8
+        # Función para dividir texto en líneas
+        def dividir_texto(texto, max_chars):
+            palabras = texto.split()
+            lineas = []
+            linea_actual = ""
+            
+            for palabra in palabras:
+                if len(linea_actual + " " + palabra) <= max_chars:
+                    if linea_actual:
+                        linea_actual += " " + palabra
+                    else:
+                        linea_actual = palabra
+                else:
+                    if linea_actual:
+                        lineas.append(linea_actual)
+                    linea_actual = palabra
+            
+            if linea_actual:
+                lineas.append(linea_actual)
+            
+            return lineas
+        
+        # Descripción del producto con saltos de línea
         if producto['descripcion']:
-            can.setFont("Helvetica", 7)
-            can.drawString(55, y, f"{producto['descripcion'][:60]}")
-            y -= 10
+            can.setFont("Carlito", 7)
+            descripcion_upper = producto['descripcion'].upper()
+            lineas_descripcion = dividir_texto(descripcion_upper, 75)  # Máximo 45 caracteres por línea
+            
+            for linea in lineas_descripcion:
+                can.drawString(40, y, linea)
+                y -= 8  # Espaciado entre líneas más pequeño
         
         # Piezas SOLO si es conjunto/kit Y tiene piezas
         if producto['tipo'] == 'conjunto' and producto['piezas']:
-            can.setFont("Helvetica", 7)
-            can.drawString(55, y, f"Incluye: {producto['piezas']}")
-            y -= 10
+            can.setFont("Carlito", 7)
+            piezas_texto = f"INCLUYE: {producto['piezas'].upper()}"
+            lineas_piezas = dividir_texto(piezas_texto, 75)
+            
+            for linea in lineas_piezas:
+                can.drawString(40, y, linea)
+                y -= 8
         
-        # Datos numéricos (cantidad, días, precios)
-        can.setFont("Helvetica", 9)
-        can.drawString(250, y + 10, str(producto['cantidad']))
-        can.drawString(300, y + 10, str(producto['dias_renta']))
-        can.drawString(350, y + 10, f"${producto['precio_unitario']:.2f}")
-        can.drawString(450, y + 10, f"${producto['subtotal']:.2f}")
+        # Datos numéricos alineados con el nombre del producto
+        can.setFont("Carlito", 9)
+        can.drawRightString(348, y_inicial_producto, str(producto['cantidad']))
+        can.drawRightString(396, y_inicial_producto, str(producto['dias_renta']))
+        can.drawRightString(473, y_inicial_producto, f"${producto['precio_unitario']:.2f}")
+        can.drawRightString(545, y_inicial_producto, f"${producto['subtotal']:.2f}")
         
         subtotal_productos += producto['subtotal']
-        y -= 15
+        y -= 7  # Espacio entre productos
+
+
+
+
+
     
     # Traslado si existe
     if cotizacion['requiere_traslado'] and cotizacion['costo_traslado'] > 0:
-        can.setFont("Helvetica", 9)
-        can.drawString(50, y, f"TRASLADO {cotizacion['tipo_traslado'].upper()}")
+        can.setFont("Carlito", 9)
+        can.drawString(25, y, f"TRASLADO {cotizacion['tipo_traslado'].upper()}")
         y -= 10
-        can.setFont("Helvetica", 7)
-        can.drawString(55, y, "Servicio de transporte del equipo")
+        can.setFont("Carlito", 7)
+        
+        # Descripción específica según el tipo de traslado
+        if cotizacion['tipo_traslado'].lower() == 'redondo':
+            descripcion_traslado = "SERVICIO DE TRASLADO DE IDA Y REGRESO DEL EQUIPO"
+        else:
+            cotizacion['tipo_traslado'].lower() == 'medio'
+            descripcion_traslado = "SERVICIO DE TRASLADO (IDA O REGRESO SEGÚN EL CLIENTE)"
+        
+        
+        can.drawString(40, y, descripcion_traslado)
         y -= 5
         
-        can.setFont("Helvetica", 9)
-        can.drawString(250, y, "-")
-        can.drawString(300, y, "-")
-        can.drawString(350, y, f"${cotizacion['costo_traslado']:.2f}")
-        can.drawString(450, y, f"${cotizacion['costo_traslado']:.2f}")
-        y -= 20
-    
+        can.setFont("Carlito", 9)
+        can.drawRightString(348, y+3, "-")
+        can.drawRightString(396, y+3, "-")
+        can.drawRightString(473, y+3, "-")
+        can.drawRightString(545, y+3, f"${cotizacion['costo_traslado']:.2f}")
+        
+    y -= 6
     # Línea separadora antes de totales
-    can.line(50, y, 550, y)
-    y -= 20
-    
-    # === TOTALES ===
-    can.setFont("Helvetica", 10)
-    can.drawString(350, y, "SUBTOTAL:")
-    can.drawString(450, y, f"${cotizacion['subtotal']:.2f}")
+    can.line(25, y, 580, y)
     y -= 15
     
-    can.drawString(350, y, "IVA (16%):")
-    can.drawString(450, y, f"${cotizacion['iva']:.2f}")
+    # === TOTALES ===
+    can.setFont("Carlito", 10)
+    can.drawString(430, y, "SUBTOTAL:")
+    can.drawRightString(545, y, f"${cotizacion['subtotal']:.2f}")
+    y -= 15
+    
+    can.drawString(430, y, "IVA (16%):")
+    can.drawRightString(545, y, f"${cotizacion['iva']:.2f}")
     y -= 15
     
     can.setFont("Helvetica-Bold", 11)
-    can.drawString(350, y, "TOTAL:")
-    can.drawString(450, y, f"${cotizacion['total']:.2f}")
-    y -= 30
+    can.drawString(430, y, "TOTAL:")
+    can.drawRightString(545, y, f"${cotizacion['total']:.2f}")
+    y -= 10
+
+
+    # ⭐ AGREGAR CONTROL DE PÁGINA NUEVA ⭐
+    print(f"Posición Y después de totales: {y}")  # Para debugging
+
+    # Verificar si hay suficiente espacio para el resto del contenido
+    espacio_necesario = 100 # Espacio para certificaciones, métodos de pago, etc.
+
+    if y < espacio_necesario:
+        print("🔄 Creando nueva página...")
+        # Crear nueva página
+        can.showPage()
+        y = 750  # Reiniciar Y en la nueva página
+        
+        # Opcional: Agregar encabezado en la nueva página
+        can.setFont("Helvetica-Bold", 12)
+        can.drawString(50, y, f"COTIZACIÓN #{cotizacion['numero_cotizacion']} - CONTINUACIÓN")
+        y -= 30
+
     
-    # === CONDICIONES Y REQUISITOS ===
-    can.setFont("Helvetica-Bold", 10)
-    can.drawString(50, y, "REQUISITOS DEL CLIENTE:")
+
+        # === CERTIFICACIONES DE SEGURIDAD (SIN TÍTULO, SOLO ASTERISCO Y NEGRITAS) ===
+    can.setFont("Helvetica-Bold", 8)  # Tamaño un poco más pequeño y negritas
+    can.drawString(50, y, "* TODOS NUESTROS EQUIPOS CUENTAN CON CERTIFICADOS DE SEGURIDAD")
+    y -= 10
+    can.drawString(50, y, "* LOS ANDAMIOS TIENEN CERTIFICACIÓN QUE CUMPLE CON LA NOM-009-STPS")
     y -= 15
-    
-    can.setFont("Helvetica", 8)
+
+    # === MÉTODOS DE PAGO Y FACTURACIÓN COMBINADOS ===
+    can.setFont("Helvetica-Bold", 8)
+    can.drawString(50, y, "MÉTODOS DE PAGO Y FACTURACIÓN:")
+    y -= 10
+
+    can.setFont("Carlito", 8)
+    can.drawString(60, y, "• EFECTIVO, TRANSFERENCIA BANCARIA, TARJETAS DE DÉBITO Y CRÉDITO")
+    y -= 10
+    can.drawString(60, y, "• CONTAMOS CON FACTURACIÓN ELECTRÓNICA")
+    y -= 10
+
+    # === REQUISITOS DEL CLIENTE (MANTENER COMO ESTÁ) ===
+    can.setFont("Helvetica-Bold", 8)
+    can.drawString(50, y, "REQUISITOS DEL CLIENTE:")
+    y -= 10
+
+    can.setFont("Carlito", 8)
     requisitos = [
-        "• Identificación oficial",
-        "• Licencia de conducir", 
-        "• Constancia de situación fiscal",
-        "• Comprobante de domicilio"
+        "• IDENTIFICACIÓN OFICIAL",
+        "• LICENCIA DE CONDUCIR", 
+        "• CONSTANCIA DE SITUACIÓN FISCAL",
+        "• COMPROBANTE DE DOMICILIO"
     ]
-    
+
     for req in requisitos:
         can.drawString(60, y, req)
         y -= 10
-    
-    y -= 10
-    can.setFont("Helvetica-Bold", 10)
+
+    y -= 5
+
+    # === CONDICIONES (MANTENER COMO ESTÁ) ===
+    can.setFont("Helvetica-Bold", 8)
     can.drawString(50, y, "CONDICIONES:")
-    y -= 15
-    
-    can.setFont("Helvetica", 8)
+    y -= 10
+
+    can.setFont("Carlito", 8)
     condiciones = [
-        "• Se requiere el pago completo por adelantado",
-        "• Ubicación exacta de la obra (Google Maps)",
-        "• El período incluye domingos y días festivos",
-        "• No se arma, ni se desarma el equipo",
-        "• Cotización válida por 7 días"
+        "• SE REQUIERE EL PAGO COMPLETO POR ADELANTADO",
+        "• UBICACIÓN EXACTA DE LA OBRA (GOOGLE MAPS)",
+        "• EL PERÍODO INCLUYE DOMINGOS Y DÍAS FESTIVOS",
+        "• NO SE ARMA, NI SE DESARMA EL EQUIPO",
+        "• COTIZACIÓN VÁLIDA POR 7 DÍAS"
     ]
-    
+
     for cond in condiciones:
         can.drawString(60, y, cond)
         y -= 10
+
+    y -= 10
+
+
+
+
+
+
+
+        # === PIE DE PÁGINA ===
+    # Línea separadora antes del pie de página
+    can.line(25, y+18, 580, y+18)
+    y -= 1
+
     
+    can.setFont("Helvetica-Bold", 9)
+    # Calcular posición centrada manualmente
+    texto1 = "ATENDIDO POR: ING. JAVIER ENRIQUE ALCOCER BERNES"
+    texto2 = "GERENTE DE ANDAMIOS COLOSIO DEL ESTADO DE CAMPECHE, CAMPECHE"
+    texto3 = "VISITE NUESTRA PÁGINA: WWW.ANDAMIOSCOLOSIO.COM"
+
+    # Centrar texto manualmente (aproximadamente en x=300 para una página de 612 pts)
+    can.drawString(173, y, texto1)
+    y -= 12
+    can.drawString(135, y, texto2)
+    y -= 15
+
+    # Página web
+    can.setFont("Helvetica-Bold", 10)
+    can.drawString(160, y, texto3)
+
     can.save()
     packet.seek(0)
     
@@ -422,17 +542,24 @@ def generar_pdf_cotizacion_buffer(cotizacion_id):
         # Leer el overlay
         new_pdf = PdfReader(packet)
         
-        # Combinar con la plantilla
-        page = existing_pdf.pages[0]
-        page.merge_page(new_pdf.pages[0])
-        output.add_page(page)
+        # ⭐ AGREGAR TODAS LAS PÁGINAS DEL OVERLAY ⭐
+        for page_num in range(len(new_pdf.pages)):
+            if page_num == 0:
+                # Primera página: combinar con plantilla
+                page = existing_pdf.pages[0]
+                page.merge_page(new_pdf.pages[page_num])
+                output.add_page(page)
+            else:
+                # Páginas adicionales: agregar solo el overlay
+                output.add_page(new_pdf.pages[page_num])
         
     except Exception as e:
         print(f"Error al usar plantilla: {e}")
         # Si no hay plantilla, usar solo el overlay
         output = PdfWriter()
         new_pdf = PdfReader(packet)
-        output.add_page(new_pdf.pages[0])
+        for page in new_pdf.pages:
+            output.add_page(page)
     
     # Retornar buffer
     output_stream = BytesIO()
@@ -673,11 +800,11 @@ def crear_cotizacion():
         
     except Exception as e:
         print(f"Error al crear cotización: {e}")
+
         if request.headers.get('Accept') == 'application/json':
             return jsonify({'success': False, 'error': 'Error al crear la cotización'}), 500
         else:
-            flash('Error al crear la cotización', 'error')
-            return redirect(url_for('cotizaciones.index'))
+            return f"<h1>Error al generar la cotización</h1><p>{str(e)}</p><p><a href='javascript:history.back()'>Volver</a></p>", 500
 
 
 
@@ -772,6 +899,48 @@ def convertir_cotizacion_a_renta(cotizacion_id):
         return jsonify({'error': 'Error interno del servidor'}), 500
     
 
+
+############################################
+############################### ELIMINAR COTIZACIONES
+###########################################
+
+@cotizaciones_bp.route('/<int:cotizacion_id>/eliminar', methods=['DELETE'])
+def eliminar_cotizacion(cotizacion_id):
+    """Eliminar cotización (eliminación lógica)"""
+    try:
+        usuario_id = session.get('user_id')
+        
+        conexion = get_db_connection()
+        cursor = conexion.cursor()
+        
+        # Verificar que la cotización existe
+        cursor.execute("SELECT numero_cotizacion FROM cotizaciones WHERE id = %s", (cotizacion_id,))
+        cotizacion = cursor.fetchone()
+        
+        if not cotizacion:
+            return jsonify({'error': 'Cotización no encontrada'}), 404
+        
+        # Eliminar detalles de productos
+        cursor.execute("DELETE FROM cotizacion_detalle WHERE cotizacion_id = %s", (cotizacion_id,))
+        
+        # Eliminar seguimiento
+        cursor.execute("DELETE FROM cotizacion_seguimiento WHERE cotizacion_id = %s", (cotizacion_id,))
+        
+        # Eliminar la cotización principal
+        cursor.execute("DELETE FROM cotizaciones WHERE id = %s", (cotizacion_id,))
+        
+        conexion.commit()
+        cursor.close()
+        conexion.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Cotización {cotizacion[0]} eliminada correctamente'
+        })
+        
+    except Exception as e:
+        print(f"Error al eliminar cotización: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
 
 
 
