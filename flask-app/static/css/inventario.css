@@ -91,11 +91,65 @@
     background: #d1d5db;
 }
 
-.action-btn {
-    margin-right: 4px;
-    border-radius: 8px;
-    font-weight: bold;
+
+.action-btn-inventario {
+    margin-right: 0.3rem;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
 }
+
+
+.action-btn-inventario {
+    margin-right: 0.3rem;
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.375rem 0.5rem; /* Más cuadrado */
+    font-size: 0.85rem;
+    width: 32px; /* Ancho fijo para que sean cuadrados */
+    height: 32px; /* Alto fijo para que sean cuadrados */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Estilos específicos para cada tipo de botón - IGUAL QUE CLIENTES */
+.btn-outline-primary.action-btn-inventario, 
+.btn-outline-primary.action-btn-inventario:focus {
+    border-color: #23395d !important;
+    color: #23395d !important;
+}
+.btn-outline-primary.action-btn-inventario:hover {
+    background: #23395d !important;
+    color: #fff !important;
+}
+
+.btn-outline-info.action-btn-inventario, 
+.btn-outline-info.action-btn-inventario:focus {
+    border-color: #17a2b8 !important;
+    color: #17a2b8 !important;
+}
+.btn-outline-info.action-btn-inventario:hover {
+    background: #17a2b8 !important;
+    color: #fff !important;
+}
+
+.btn-outline-warning.action-btn-inventario, 
+.btn-outline-warning.action-btn-inventario:focus {
+    border-color: #fbc02d !important;
+    color: #fbc02d !important;
+}
+.btn-outline-warning.action-btn-inventario:hover {
+    background: #fbc02d !important;
+    color: #23395d !important;
+}
+
+
+
+
+
+
 
 @media (max-width: 900px) {
     .box-container { padding: 1rem; }

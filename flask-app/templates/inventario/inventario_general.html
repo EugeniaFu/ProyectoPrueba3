@@ -9,14 +9,14 @@
 {% block content %}
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+  {{ message }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
 {% endwith %}
 
 
@@ -76,14 +76,29 @@
             <div>Repar: {{ pieza.sucursales[sucursal.id].en_reparacion }}</div>
           </td>
           {% endfor %}
+
+
+
           <td>
-            <button class="btn btn-primary btn-sm action-btn" data-bs-toggle="modal"
-              data-bs-target="#modalAltaBaja{{ pieza.id_pieza }}">Alta/Baja</button>
-            <button class="btn btn-info btn-sm action-btn" data-bs-toggle="modal"
-              data-bs-target="#modalTransferir{{ pieza.id_pieza }}">Transferir</button>
-            <button class="btn btn-warning btn-sm action-btn" data-bs-toggle="modal"
-              data-bs-target="#modalEditarPieza{{ pieza.id_pieza }}">Editar</button>
+            <div class="d-flex flex-column gap-1">
+              <button class="btn btn-outline-primary btn-sm action-btn-inventario" data-bs-toggle="modal"
+                data-bs-target="#modalAltaBaja{{ pieza.id_pieza }}" title="Alta/Baja">
+                <i class="bi bi-plus-slash-minus"></i>
+              </button>
+              <button class="btn btn-outline-info btn-sm action-btn-inventario" data-bs-toggle="modal"
+                data-bs-target="#modalTransferir{{ pieza.id_pieza }}" title="Transferir">
+                <i class="bi bi-arrow-left-right"></i>
+              </button>
+              <button class="btn btn-outline-warning btn-sm action-btn-inventario" data-bs-toggle="modal"
+                data-bs-target="#modalEditarPieza{{ pieza.id_pieza }}" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
           </td>
+
+
+
+
         </tr>
         {% endfor %}
       </tbody>
@@ -182,8 +197,9 @@
 </div>
 
 <!-- Modal Editar Pieza -->
-<div class="modal fade {% if show_modal_editar_pieza == pieza.id_pieza %}show d-block{% endif %}" id="modalEditarPieza{{ pieza.id_pieza }}" tabindex="-1"
-  aria-labelledby="modalEditarPiezaLabel{{ pieza.id_pieza }}" aria-hidden="true" {% if show_modal_editar_pieza == pieza.id_pieza %}style="background:rgba(0,0,0,0.5);"{% endif %}>
+<div class="modal fade {% if show_modal_editar_pieza == pieza.id_pieza %}show d-block{% endif %}"
+  id="modalEditarPieza{{ pieza.id_pieza }}" tabindex="-1" aria-labelledby="modalEditarPiezaLabel{{ pieza.id_pieza }}"
+  aria-hidden="true" {% if show_modal_editar_pieza==pieza.id_pieza %}style="background:rgba(0,0,0,0.5);" {% endif %}>
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('inventario.editar_pieza', id_pieza=pieza.id_pieza) }}">
       <div class="modal-content">
@@ -193,23 +209,27 @@
         </div>
         <div class="modal-body">
           {% if error_codigo_editar and show_modal_editar_pieza == pieza.id_pieza %}
-            <div class="alert alert-danger">{{ error_codigo_editar }}</div>
+          <div class="alert alert-danger">{{ error_codigo_editar }}</div>
           {% endif %}
           <div class="mb-2">
             <label class="form-label">Nombre de la pieza</label>
-            <input type="text" class="form-control" name="nombre_pieza" required value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.nombre_pieza }}{% else %}{{ pieza.nombre_pieza }}{% endif %}">
+            <input type="text" class="form-control" name="nombre_pieza" required
+              value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.nombre_pieza }}{% else %}{{ pieza.nombre_pieza }}{% endif %}">
           </div>
           <div class="mb-2">
             <label class="form-label">Código</label>
-            <input type="text" class="form-control" name="codigo_pieza" required value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.codigo_pieza }}{% else %}{{ pieza.codigo_pieza }}{% endif %}">
+            <input type="text" class="form-control" name="codigo_pieza" required
+              value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.codigo_pieza }}{% else %}{{ pieza.codigo_pieza }}{% endif %}">
           </div>
           <div class="mb-2">
             <label class="form-label">Categoría</label>
-            <input type="text" class="form-control" name="categoria" value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.categoria }}{% else %}{{ pieza.categoria }}{% endif %}">
+            <input type="text" class="form-control" name="categoria"
+              value="{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.categoria }}{% else %}{{ pieza.categoria }}{% endif %}">
           </div>
           <div class="mb-2">
             <label class="form-label">Descripción</label>
-            <textarea class="form-control" name="descripcion" rows="2">{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.descripcion }}{% else %}{{ pieza.descripcion }}{% endif %}</textarea>
+            <textarea class="form-control" name="descripcion"
+              rows="2">{% if show_modal_editar_pieza == pieza.id_pieza and form_data_editar %}{{ form_data_editar.descripcion }}{% else %}{{ pieza.descripcion }}{% endif %}</textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -224,7 +244,9 @@
 {% endfor %}
 
 <!-- Modal Nueva Pieza -->
-<div class="modal fade {% if show_modal_nueva_pieza %}show d-block{% endif %}" id="modalNuevaPieza" tabindex="-1" aria-labelledby="modalNuevaPiezaLabel" aria-hidden="true" {% if show_modal_nueva_pieza %}style="background:rgba(0,0,0,0.5);"{% endif %}>
+<div class="modal fade {% if show_modal_nueva_pieza %}show d-block{% endif %}" id="modalNuevaPieza" tabindex="-1"
+  aria-labelledby="modalNuevaPiezaLabel" aria-hidden="true" {% if show_modal_nueva_pieza
+  %}style="background:rgba(0,0,0,0.5);" {% endif %}>
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('inventario.agregar_pieza_general') }}">
       <div class="modal-content">
@@ -234,23 +256,27 @@
         </div>
         <div class="modal-body">
           {% if error_codigo %}
-            <div class="alert alert-danger">{{ error_codigo }}</div>
+          <div class="alert alert-danger">{{ error_codigo }}</div>
           {% endif %}
           <div class="mb-2">
             <label class="form-label">Nombre de la pieza</label>
-            <input type="text" class="form-control" name="nombre_pieza" required value="{{ form_data.nombre_pieza if form_data else '' }}">
+            <input type="text" class="form-control" name="nombre_pieza" required
+              value="{{ form_data.nombre_pieza if form_data else '' }}">
           </div>
           <div class="mb-2">
             <label class="form-label">Código</label>
-            <input type="text" class="form-control" name="codigo_pieza" required value="{{ form_data.codigo_pieza if form_data else '' }}">
+            <input type="text" class="form-control" name="codigo_pieza" required
+              value="{{ form_data.codigo_pieza if form_data else '' }}">
           </div>
           <div class="mb-2">
             <label class="form-label">Categoría</label>
-            <input type="text" class="form-control" name="categoria" value="{{ form_data.categoria if form_data else '' }}">
+            <input type="text" class="form-control" name="categoria"
+              value="{{ form_data.categoria if form_data else '' }}">
           </div>
           <div class="mb-2">
             <label class="form-label">Descripción</label>
-            <textarea class="form-control" name="descripcion" rows="2">{{ form_data.descripcion if form_data else '' }}</textarea>
+            <textarea class="form-control" name="descripcion"
+              rows="2">{{ form_data.descripcion if form_data else '' }}</textarea>
           </div>
         </div>
         <div class="modal-footer">
