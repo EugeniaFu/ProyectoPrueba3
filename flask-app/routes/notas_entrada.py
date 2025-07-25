@@ -52,7 +52,17 @@ def preview_nota_entrada(renta_id):
             if datetime.now() > fecha_limite:
                 hay_retraso = True
                 dias_retraso = (datetime.now().date() - (renta['fecha_entrada'] + timedelta(days=1))).days + 1
-                cobro_retraso = dias_retraso * 100
+
+                # Obtener subtotal real de la renta
+                cursor.execute("""
+                    SELECT SUM(subtotal) AS total_renta
+                    FROM renta_detalle
+                    WHERE renta_id = %s
+                """, (renta_id,))
+                total_renta = cursor.fetchone()['total_renta'] or 0
+
+                # Calcular el cobro por días de retraso
+                cobro_retraso = dias_retraso * total_renta
         else:
             fecha_limite = "Indefinida - se cobrará desde hoy"
 
@@ -66,7 +76,8 @@ def preview_nota_entrada(renta_id):
             'fecha_limite': fecha_limite.strftime('%d/%m/%Y %H:%M') if isinstance(fecha_limite, datetime) else str(fecha_limite),
             'hay_retraso': hay_retraso,
             'cobro_retraso': cobro_retraso,
-            'piezas': piezas_salida
+            'piezas': piezas_salida,
+            'dias_retraso': dias_retraso if hay_retraso else 0,
         })
 
     except Exception as e:
@@ -101,7 +112,24 @@ def crear_nota_entrada(renta_id):
                 break
         if cobro_adicional > 0:
             estado = 'con_retraso' if 'retraso' in motivo_cobro.lower() else 'con_daños'
-        
+
+        # Primero insertamos la nota de entrada
+        cursor.execute("""
+            INSERT INTO notas_entrada (
+                folio, renta_id, fecha, fecha_entrada_real, observaciones, 
+                usuario_id, cobro_adicional, motivo_cobro, estado
+            ) VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)
+        """, (folio, renta_id, fecha_entrada_real, observaciones,
+              usuario_id, cobro_adicional, motivo_cobro, estado))
+        nota_entrada_id = cursor.lastrowid
+
+        # Generar y guardar URL PDF nota de entrada
+        pdf_url = f"/notas_entrada/pdf/{nota_entrada_id}"
+        cursor.execute("""
+            UPDATE notas_entrada SET pdf_url = %s WHERE id = %s
+        """, (pdf_url, nota_entrada_id))
+
+        # Insertar nota de costo extra si aplica
         if cobro_adicional > 0:
             cursor.execute("SELECT IFNULL(MAX(folio), 0) + 1 AS siguiente_folio FROM notas_costo_extra")
             folio_extra = str(cursor.fetchone()['siguiente_folio']).zfill(5)
@@ -114,25 +142,9 @@ def crear_nota_entrada(renta_id):
 
             nota_extra_id = cursor.lastrowid
             pdf_extra_url = f"/notas_entrada/pdf_costo_extra/{nota_extra_id}"
-
             cursor.execute("UPDATE notas_costo_extra SET pdf_url = %s WHERE id = %s", (pdf_extra_url, nota_extra_id))
 
-        cursor.execute("""
-            INSERT INTO notas_entrada (
-                folio, renta_id, fecha, fecha_entrada_real, observaciones, 
-                usuario_id, cobro_adicional, motivo_cobro, estado
-            ) VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s)
-        """, (folio, renta_id, fecha_entrada_real, observaciones,
-              usuario_id, cobro_adicional, motivo_cobro, estado))
-        nota_entrada_id = cursor.lastrowid
-
-        # === Generar y guardar la URL del PDF ===
-        pdf_url = f"/notas_entrada/pdf/{nota_entrada_id}"
-
-        cursor.execute("""
-            UPDATE notas_entrada SET pdf_url = %s WHERE id = %s
-        """, (pdf_url, nota_entrada_id))
-
+        # Continuar con el detalle y movimientos de inventario
         cursor.execute("SELECT id_sucursal FROM rentas WHERE id = %s", (renta_id,))
         id_sucursal = cursor.fetchone()['id_sucursal']
 
@@ -144,16 +156,14 @@ def crear_nota_entrada(renta_id):
             costo_daño = float(pieza.get('costo_daño', 0))
             obs_pieza = pieza.get('observaciones', '')
 
-            # Insertar detalle de la nota de entrada
             cursor.execute("""
                 INSERT INTO notas_entrada_detalle (
                     nota_entrada_id, id_pieza, cantidad_esperada, cantidad_recibida,
                     estado_pieza, costo_daño, observaciones
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (nota_entrada_id, id_pieza, cantidad_esperada, cantidad_recibida,
-                estado_pieza, costo_daño, obs_pieza))
+                  estado_pieza, costo_daño, obs_pieza))
 
-            # ACTUALIZAR INVENTARIO SEGÚN ESTADO DE LA PIEZA
             if estado_pieza == 'buena':
                 cursor.execute("""
                     UPDATE inventario_sucursal
@@ -169,7 +179,6 @@ def crear_nota_entrada(renta_id):
                     WHERE id_sucursal = %s AND id_pieza = %s
                 """, (cantidad_recibida, cantidad_recibida, id_sucursal, id_pieza))
             elif estado_pieza == 'faltante':
-                # Faltante: no se devuelve nada, se descuenta todo lo que se esperaba
                 cursor.execute("""
                     UPDATE inventario_sucursal
                     SET rentadas = rentadas - %s
@@ -329,7 +338,14 @@ def crear_nota_costo_extra(renta_id):
     data = request.get_json()
     monto = float(data.get('monto', 0))
     motivo = data.get('motivo', '')
-    usuario_id = 1  # De sesión, si aplica
+    fecha = data.get('fecha')  # Ya viene en formato ISO desde el front
+    costo_envio = float(data.get('costo_envio', 0))
+    dias_atraso = int(data.get('dias_atraso', 0))
+    metodo_pago = data.get('metodo_pago', '')
+    total_pagado = float(data.get('total_pagado', 0))
+    facturable = int(data.get('facturable', 0))  # Se espera como 0 o 1
+    recoleccion = str(data.get('recoleccion', ''))
+    usuario_id = 1  # Cambia esto si tienes usuario en sesión
 
     if monto <= 0:
         return jsonify({'success': False, 'error': 'Monto inválido'})
@@ -341,9 +357,17 @@ def crear_nota_costo_extra(renta_id):
         folio = str(cursor.fetchone()['siguiente_folio']).zfill(5)
 
         cursor.execute("""
-            INSERT INTO notas_costo_extra (renta_id, folio, monto, motivo, usuario_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (renta_id, folio, monto, motivo, usuario_id))
+            INSERT INTO notas_costo_extra (
+                renta_id, folio, fecha, monto, motivo, usuario_id,
+                costo_envio, dias_atraso, metodo_pago, total_pagado,
+                facturable, recoleccion
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            renta_id, folio, fecha, monto, motivo, usuario_id,
+            costo_envio, dias_atraso, metodo_pago, total_pagado,
+            facturable, recoleccion
+        ))
 
         nota_extra_id = cursor.lastrowid
         pdf_url = f"/notas_entrada/pdf_costo_extra/{nota_extra_id}"
@@ -497,3 +521,4 @@ def generar_pdf_nota_costo_extra_por_renta(renta_id):
 
     # 🔥 CORREGIDO AQUÍ
     return redirect(url_for('notas_entrada.generar_pdf_costo_extra', nota_extra_id=nota['id']))
+
