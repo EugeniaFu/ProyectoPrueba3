@@ -52,12 +52,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     // Mostrar alerta si hay retraso
                     const alertRetraso = document.getElementById('alerta-retraso');
+                    const seccionCobroRetraso = document.getElementById('seccion-cobro-retraso');
+
                     if (data.hay_retraso) {
                         alertRetraso.style.display = 'block';
+                        seccionCobroRetraso.style.display = 'flex'; // o 'block' según diseño
                         document.getElementById('cobro-retraso').value = data.cobro_retraso;
-                        document.getElementById('motivo-cobro').value = `Retraso en entrega - $${data.cobro_retraso}`;
+                        document.getElementById('motivo-cobro').value = `Retraso de ${data.dias_retraso} día(s)`;
                     } else {
                         alertRetraso.style.display = 'none';
+                        seccionCobroRetraso.style.display = 'none';
                     }
 
                     // Llenar tabla de piezas

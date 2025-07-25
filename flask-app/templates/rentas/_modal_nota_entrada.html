@@ -59,7 +59,7 @@
                 </div>
 
                 <!-- Cobros adicionales -->
-                <div class="row mb-3">
+                <div id="seccion-cobro-retraso" class="row mb-3" style="display: none;">
                     <div class="col-md-6">
                         <label for="cobro-retraso" class="form-label">Cobro adicional:</label>
                         <input type="number" id="cobro-retraso" class="form-control" step="0.01" min="0">
@@ -68,7 +68,6 @@
                         <label for="motivo-cobro" class="form-label">Motivo del cobro:</label>
                         <input type="text" id="motivo-cobro" class="form-control" placeholder="Ej: Retraso, daños, etc.">
                     </div>
-                    <!-- Total de cobros (retraso + daños) -->
                     <div class="mb-2 text-end">
                         <strong>Total a cobrar:</strong> $<span id="total-cobro-general">0.00</span>
                     </div>
@@ -185,6 +184,56 @@
         </div>
     </div>
 
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <label for="input-facturable" class="form-label">¿Facturable?</label>
+            <select id="input-facturable" class="form-select">
+            <option value="1">Sí</option>
+            <option value="0" selected>No</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="input-metodo-pago" class="form-label">Método de Pago</label>
+            <select id="input-metodo-pago" class="form-select">
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta Débito">Tarjeta Débito</option>
+            <option value="Tarjeta Crédito">Tarjeta Crédito</option>
+            </select>
+        </div>
+        <div class="col-md-4" id="grupo-efectivo" style="display: none;">
+            <label for="input-cantidad-entregada" class="form-label">Cantidad Entregada</label>
+            <input type="number" class="form-control" id="input-cantidad-entregada" min="0" step="0.01" />
+            <div class="form-text text-muted">
+            Cambio: <span id="monto-cambio">$0.00</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="form-group">
+    <label for="recoleccion-select">¿Hubo recolección?</label>
+    <select class="form-control" id="recoleccion-select">
+        <option value="no">No</option>
+        <option value="si">Sí</option>
+    </select>
+    </div>
+
+    <div class="form-group" id="grupo-costo-recoleccion" style="display: none;">
+    <label for="input-costo-recoleccion">Costo de recolección</label>
+    <input type="number" min="0" step="0.01" class="form-control" id="input-costo-recoleccion" placeholder="Ingrese el monto">
+    </div>
+
+        <!-- Campos ocultos adicionales -->
+        <input type="hidden" id="input-total-pagado" />
+        <input type="hidden" id="input-recoleccion" value="cliente" />
+        <input type="hidden" id="input-dias-atraso" />
+        <input type="hidden" id="input-costo-envio" />
+        <input type="hidden" id="input-fecha" />
+        <input type="hidden" id="input-nota-entrada-id" value="{{ nota_entrada_id }}">
+
+
+
     <div class="modal-footer">
         <button type="submit" class="btn btn-success">
         <i class="bi bi-check-circle"></i> Confirmar y Generar
@@ -286,13 +335,29 @@ document.getElementById('btn-generar-costo-extra').addEventListener('click', () 
         console.error('Error al obtener la prefactura:', error);
     });
 
+    document.getElementById('input-fecha').value = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    document.getElementById('input-costo-envio').value = parseFloat(document.getElementById('costo-traslado-prefactura').textContent.replace('$', '')) || 0;
+    document.getElementById('input-dias-atraso').value = window.datosNotaEntrada.diasAtraso || 0;
+    document.getElementById('input-recoleccion').value = window.datosNotaEntrada.tipoRecoleccion || 'cliente';
+
+
 });
 
 document.getElementById('form-costo-extra').addEventListener('submit', async function (e) {
     e.preventDefault();
 
+    const costoEnvio = parseFloat(document.getElementById('input-costo-envio').value) || 0;
+    const diasAtraso = parseInt(document.getElementById('input-dias-atraso').value) || 0;
+    const metodoPago = document.getElementById('input-metodo-pago').value;
+    const totalPagado = parseFloat(document.getElementById('input-cantidad-entregada').value) || 0;
+    const facturable = document.getElementById('input-facturable').value === '1';
+    const notaEntradaId = parseInt(document.getElementById('input-nota-entrada-id').value) || 0;
     const monto = parseFloat(document.getElementById('input-monto-extra').value) || 0;
     const motivo = document.getElementById('input-motivo-extra').value;
+    const recoleccionSeleccion = document.getElementById('recoleccion-select').value;
+    const recoleccion = (recoleccionSeleccion === 'si') 
+    ? parseFloat(document.getElementById('input-costo-recoleccion').value || 0)
+    : 0;
     const rentaId = window.datosNotaEntrada.rentaId;
 
     try {
@@ -300,8 +365,16 @@ document.getElementById('form-costo-extra').addEventListener('submit', async fun
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                monto: monto,
-                motivo: motivo
+                monto: monto + recoleccion,
+                motivo: motivo,
+                fecha: new Date().toISOString(),  // ISO 8601 formato para datetime
+                costo_envio: costoEnvio,
+                nota_entrada_id: notaEntradaId,
+                dias_atraso: diasAtraso,
+                metodo_pago: metodoPago,
+                total_pagado: totalPagado,
+                facturable: facturable ? 1 : 0, // convertir booleano a tinyint(1)
+                recoleccion: recoleccion
             })
         });
 
@@ -352,5 +425,131 @@ function calcularTotalCobro() {
 
     document.getElementById('total-cobro-general').textContent = total.toFixed(2);
 }
+
+
+document.getElementById('input-metodo-pago').addEventListener('change', () => {
+  const metodo = document.getElementById('input-metodo-pago').value;
+  const grupoEfectivo = document.getElementById('grupo-efectivo');
+  const cambioEl = document.getElementById('monto-cambio');
+  const inputCantidad = document.getElementById('input-cantidad-entregada');
+
+  // Mostrar el campo SIEMPRE
+  grupoEfectivo.style.display = 'block';
+
+  if (metodo === 'Efectivo') {
+    cambioEl.parentElement.style.display = 'block'; // Mostrar cambio
+    inputCantidad.value = '';
+    cambioEl.textContent = '$0.00';
+  } else {
+    cambioEl.parentElement.style.display = 'none'; // Ocultar cambio
+    const monto = parseFloat(document.getElementById('input-monto-extra').value) || 0;
+    inputCantidad.value = monto.toFixed(2); // Valor exacto
+  }
+});
+
+document.getElementById('input-cantidad-entregada').addEventListener('input', () => {
+  const entregado = parseFloat(document.getElementById('input-cantidad-entregada').value) || 0;
+  const monto = parseFloat(document.getElementById('input-monto-extra').value) || 0;
+  const cambio = entregado > monto ? (entregado - monto).toFixed(2) : 0;
+  document.getElementById('monto-cambio').textContent = `$${cambio}`;
+});
+
+document.getElementById('recoleccion-select').addEventListener('change', function () {
+  const seleccion = this.value;
+  const grupoRecoleccion = document.getElementById('grupo-costo-recoleccion');
+  grupoRecoleccion.style.display = (seleccion === 'si') ? 'block' : 'none';
+});
+
+// Función para actualizar el monto total (incluye costo recolección)
+function actualizarMontoTotal() {
+  // Monto base (sin recolección)
+  let montoBase = 0;
+
+  // Sumar cobro por retraso
+  const cobroRetraso = parseFloat(document.getElementById('cobro-retraso')?.value) || 0;
+  montoBase += cobroRetraso;
+
+  // Sumar daños por pieza
+  document.querySelectorAll('.estado-pieza').forEach(select => {
+    const estado = select.value;
+    const idPieza = select.dataset.idPieza;
+    const costoInput = document.querySelector(`.costo-daño[data-id-pieza="${idPieza}"]`);
+    const costo = parseFloat(costoInput?.value) || 0;
+
+    if ((estado === 'dañada' || estado === 'faltante') && costoInput && !costoInput.disabled) {
+      montoBase += costo;
+    }
+  });
+
+  // Costo de recolección si aplica
+  const recoleccionSelect = document.getElementById('recoleccion-select').value;
+  let costoRecoleccion = 0;
+  if (recoleccionSelect === 'si') {
+    costoRecoleccion = parseFloat(document.getElementById('input-costo-recoleccion').value) || 0;
+  }
+
+  const montoTotal = montoBase + costoRecoleccion;
+
+  // Actualizar en el DOM
+  document.getElementById('monto-costo-extra').textContent = montoTotal.toFixed(2);
+  document.getElementById('input-monto-extra').value = montoTotal.toFixed(2);
+
+  // También actualiza cantidad entregada si método pago NO es efectivo
+  const metodoPago = document.getElementById('input-metodo-pago').value;
+  if (metodoPago !== 'Efectivo') {
+    document.getElementById('input-cantidad-entregada').value = montoTotal.toFixed(2);
+  }
+}
+
+// Detectar cambios en el input costo de recolección para actualizar monto
+document.getElementById('input-costo-recoleccion').addEventListener('input', actualizarMontoTotal);
+
+// También actualizar monto cuando cambia selección de recolección (para mostrar/ocultar input y actualizar)
+document.getElementById('recoleccion-select').addEventListener('change', function () {
+  const seleccion = this.value;
+  const grupoRecoleccion = document.getElementById('grupo-costo-recoleccion');
+  grupoRecoleccion.style.display = (seleccion === 'si') ? 'block' : 'none';
+
+  // Actualiza monto total al mostrar u ocultar costo recolección
+  actualizarMontoTotal();
+});
+
+// Ya tienes este listener para cambio de método de pago, lo modificamos para que use la función
+document.getElementById('input-metodo-pago').addEventListener('change', () => {
+  const metodo = document.getElementById('input-metodo-pago').value;
+  const grupoEfectivo = document.getElementById('grupo-efectivo');
+  const cambioEl = document.getElementById('monto-cambio');
+  const inputCantidad = document.getElementById('input-cantidad-entregada');
+
+  grupoEfectivo.style.display = 'block';
+
+  if (metodo === 'Efectivo') {
+    cambioEl.parentElement.style.display = 'block';
+    inputCantidad.value = '';
+    cambioEl.textContent = '$0.00';
+  } else {
+    cambioEl.parentElement.style.display = 'none';
+    // Usar monto actualizado
+    const montoTotal = parseFloat(document.getElementById('input-monto-extra').value) || 0;
+    inputCantidad.value = montoTotal.toFixed(2);
+  }
+});
+
+// También actualizar cambio al ingresar cantidad entregada
+document.getElementById('input-cantidad-entregada').addEventListener('input', () => {
+  const entregado = parseFloat(document.getElementById('input-cantidad-entregada').value) || 0;
+  const monto = parseFloat(document.getElementById('input-monto-extra').value) || 0;
+  const cambio = entregado > monto ? (entregado - monto).toFixed(2) : 0;
+  document.getElementById('monto-cambio').textContent = `$${cambio}`;
+});
+
+// Finalmente, llama actualizarMontoTotal() cuando abres el modal para inicializar
+document.getElementById('btn-generar-costo-extra').addEventListener('click', () => {
+  // (tu código actual para mostrar modal)
+
+  // Al final, invoca actualización
+  actualizarMontoTotal();
+});
+
 
 </script>
